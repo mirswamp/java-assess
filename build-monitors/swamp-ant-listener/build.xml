@@ -1,0 +1,25 @@
+<project name="swamp-ant-listener" default="jar">
+  <property name="artifact-id" value="${ant.project.name}" />
+  <property name="artifact-version" value="1.0" />
+  <property name="jarfile" 
+	    value="${artifact-id}-${artifact-version}.jar" />
+
+  <target name="clean">
+    <delete dir="target"/>
+  </target>
+
+  <target name="compile">
+    <mkdir dir="target/classes"/>
+    <javac includeantruntime="true"
+		   srcdir="src/main/java" 
+		   destdir="target/classes"
+		   debug="on">
+	  <compilerarg value="-Xlint:all"/>
+	</javac>
+  </target>
+
+  <target name="jar" depends="compile">
+    <jar destfile="target/${jarfile}" basedir="target/classes" />
+  </target>
+
+</project>

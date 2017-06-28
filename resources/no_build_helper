@@ -1,0 +1,411 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import os.path as osp
+import subprocess
+import argparse
+import shlex
+import uuid
+import glob
+import xml.etree.ElementTree as ET
+
+
+class NoBuildHelperError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)    
+
+
+class NoSourceFilesFoundError(NoBuildHelperError):
+    pass
+
+
+class CompilationFailedError(NoBuildHelperError):
+    pass
+
+
+class BuildCleanFailedError(NoBuildHelperError):
+    pass
+
+
+class CompilationSummary:
+
+    version = '2.0'
+
+    def __init__(self, kwargs):
+
+        self._filepath = kwargs['source_compiles_xmlfile']
+
+        self._root = ET.Element('source-compiles')
+        self._root.set('uuid', str(uuid.uuid4()))
+
+        self._add_to_root(kwargs, 'package-short-name')
+        self._add_to_root(kwargs, 'package-version')
+
+        if not kwargs['platform']:
+            CompilationSummary._add(self._root, 'platform', PrintPlatform.get_platform())
+        else:
+            self._add_to_root(kwargs, 'platform')
+
+        self._add_to_root(kwargs, 'package-root-dir')
+        self._add_to_root(kwargs, 'build-root-dir')
+
+        CompilationSummary._add(self._root, 'no-build-version', CompilationSummary.version)
+        self._add_to_root(kwargs, 'build-sys')
+
+    @classmethod
+    def _add(cls, parent, tag, text=None):
+        elem = ET.SubElement(parent, tag)
+        if(text):
+            elem.text = text
+        return elem
+
+    def _add_to_root(self, kwargs, key):
+        if kwargs[key]:
+            CompilationSummary._add(self._root, key, kwargs[key])
+        
+    def __enter__(self):
+        return self
+
+    def __exit__(self, ttype, value, traceback):
+        tree = ET.ElementTree(self._root)
+        
+        if(self._filepath):
+            tree.write(self._filepath, encoding='UTF-8', xml_declaration=True)
+
+    def addinfo(self, srcfile, cmd, cwd, errcode, output, environ):
+        compiled_elem = CompilationSummary._add(self._root, 'source-compile')
+
+        CompilationSummary._add(compiled_elem, 'source-file', srcfile)
+        CompilationSummary._add(compiled_elem, 'source-type', get_src_type(srcfile))
+
+        command_elem = CompilationSummary._add(compiled_elem, 'command')
+        CompilationSummary._add(command_elem, 'executable', cmd[0])
+        args_elem = CompilationSummary._add(command_elem, 'args')
+        for arg in cmd[1:]:
+            CompilationSummary._add(args_elem, 'arg', arg)
+
+        env_elem = CompilationSummary._add(command_elem, 'environment')
+        for key in environ.keys():
+            CompilationSummary._add(env_elem, 'env',
+                                    '{0}={1}'.format(key, environ[key]))
+
+        CompilationSummary._add(command_elem, 'cwd', cwd)
+
+        if errcode < 0:
+            CompilationSummary._add(compiled_elem, 'exit-signal', str(-errcode))
+        else:
+            CompilationSummary._add(compiled_elem, 'exit-code', str(errcode))
+        CompilationSummary._add(compiled_elem, 'output', output)
+
+
+class PrintPlatform(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        namespace.platform = PrintPlatform.get_platform()
+
+    @classmethod
+    def get_platform(cls):
+        if 'VMPLATNAME' in os.environ:
+            return os.environ['VMPLATNAME']
+        else:
+            return str(subprocess.check_output(['uname', '-s', '-r']),
+                       encoding='utf-8').strip()
+
+
+def build_dot_xml(srcfiles):
+    '''<?xml version='1.0' encoding='utf-8'?>
+<project default="compile">
+  <property name="srcdir" value="." />
+  <property name="destdir" value="." />
+
+  <target name="compile">
+	<javac
+		srcdir="${basedir}/${srcdir}"
+		destdir="${basedir}/${destdir}"
+		includeantruntime="false"
+		includes="%s"
+		debug="on"/>
+  </target>
+
+  <target name="clean">
+	<delete>
+	  <fileset dir="${destdir}" includes="*.class">
+		<selector>
+		  <present targetdir="${srcdir}">
+            <mapper type="glob" from="*.class" to="*.java"/>
+          </present>
+		</selector>
+	  </fileset>
+	</delete>
+  </target>
+</project>
+'''
+    return build_dot_xml.__doc__ % ','.join(srcfiles)
+
+def makefile(srcfiles):
+    '''C_EXT = c
+CPP_EXT = C cc cp cpp CPP cxx c++
+
+FILES := {VALID_SOURCE_FILES}
+#FILES := $(wildcard $(foreach i,$(C_EXT) $(CPP_EXT),$(addsuffix $(i),*.)))
+
+C_FILES := $(filter $(foreach i,$(C_EXT),$(addsuffix $(i),%.)),$(FILES))
+CPP_FILES := $(filter $(foreach i,$(CPP_EXT),$(addsuffix $(i),%.)),$(FILES))
+
+C_OBJ_FILES := $(addsuffix .o,$(C_FILES))
+CPP_OBJ_FILES := $(addsuffix .o,$(CPP_FILES))
+ALL_OBJ_FILES := $(C_OBJ_FILES) $(CPP_OBJ_FILES)
+
+all: $(ALL_OBJ_FILES)
+
+CC = gcc
+CPP = g++
+
+$(C_OBJ_FILES): %.o: %
+	$(CC) -c -o $@ $<
+
+$(CPP_OBJ_FILES): %.o: %
+	$(CPP) -c -o $@ $<
+
+$(C_FILES) $(CPP_FILES): ;
+
+clean:
+	rm -f $(ALL_OBJ_FILES)
+ '''
+    return makefile.__doc__.format(VALID_SOURCE_FILES=' '.join(srcfiles))
+
+def run_build_clean(kwargs):
+    
+    if kwargs['build-sys'] == 'ant':
+        cmd = ['ant', '-buildfile', kwargs['build-file'], '-Dbasedir', os.getcwd(), 'clean']
+    else:
+        cmd = ['make', '--file={0}'.format(kwargs['build-file']), 'clean']
+
+    errcode, errmsg, environ = run_cmd(cmd, os.getcwd())
+
+    if errcode != 0:
+        msg = 'ERROR: \'{0}\' returned errcode: {1}, errmsg={2}'.format(' '.join(cmd),
+                                                                        errcode,
+                                                                        errmsg)
+
+        if kwargs['source_compile_logfile']:
+            with open(kwargs['source_compile_logfile'], 'a') as fobj:
+                print(msg, file=fobj)
+
+        raise BuildCleanFailedError(msg)
+    
+def create_build_file(build_sys, filepath, srcfiles):
+    if build_sys == 'ant':
+        docstr = build_dot_xml(srcfiles)
+    elif build_sys == 'make':
+        docstr = makefile(srcfiles)
+    else:
+        raise NotImplementedError
+    
+    #if osp.isdir(filepath):
+    #    filename = 'build.xml' if(build_sys == 'ant') else 'Makefile'
+    #    filepath = osp.join(filepath, filename)
+        
+    with open(filepath, 'w') as fobj:
+        print(docstr, file=fobj)
+
+    
+def run_cmd(cmd,
+            cwd='.'):
+
+    environ = dict(os.environ)
+
+    try:
+        if isinstance(cmd, str):
+            cmd = shlex.split(cmd)
+
+        process = subprocess.Popen(cmd,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT,
+                                   stdin=None,
+                                   shell=None,
+                                   cwd=cwd)
+
+        stdoutdata, stderrdata = process.communicate()
+        #process.wait()
+        return (process.returncode, stdoutdata.decode(encoding='UTF-8'), environ)
+
+    except subprocess.CalledProcessError as err:
+        return (err.returncode, repr(None), environ)
+
+def get_ext_list(build_sys):
+    if build_sys == 'ant':
+        return ['.java']
+    elif build_sys == 'make':
+        return ['.c', '.C', '.cc', '.cpp', '.CPP', '.cxx', '.c++', '.cp']
+    else:
+        raise NotImplementedError
+
+def get_src_files(build_sys, pkgpath):
+    '''Returns a list of source files in pkgpath'''
+    exts = get_ext_list(build_sys)
+    return [filename for filename in os.listdir(pkgpath) \
+            if(osp.splitext(filename)[1] in exts)]
+
+def get_src_type(srcfile):
+    if osp.splitext(srcfile)[1] == '.java':
+        return 'Java'
+    elif osp.splitext(srcfile)[1] == '.c':
+        return 'C'
+    elif osp.splitext(srcfile)[1] in ['.C', '.cc', '.cpp', '.CPP', '.cxx', '.c++', '.cp']:
+        return 'C++'
+    else:
+        raise NotImplementedError
+
+def get_classpath(pkgpath):
+    jarfiles = glob.glob('%s/*.jar' % os.getcwd())
+    if jarfiles:
+        return '-classpath %s:.' % ':'.join([osp.basename(f) for f in jarfiles])
+    else:
+        return ''
+
+def get_compilation_cmd(srcfile, pkgpath):
+
+    srctype = get_src_type(srcfile)
+    if srctype == 'Java': 
+        cmd = 'javac -g -implicit:class {1} {0}'.format(srcfile,
+                                                        get_classpath(pkgpath))
+    elif srctype == 'C':
+        cmd = 'gcc -c -o {0}.o {0}'.format(srcfile)
+    elif srctype == 'C++':
+        cmd = 'g++ -c -o {0}.o {0}'.format(srcfile)
+    else:
+        raise NotImplementedError
+
+    return shlex.split(cmd)
+
+def create_summary_report(kwargs, total, compiled):
+
+    if kwargs['source_compile_logfile']:
+        with open(kwargs['source_compile_logfile'], 'w') as fobj:
+            print('source-files: {0}, compilable: {1}'.format(total, compiled), file=fobj)
+
+def create_compilation_report(kwargs):
+                
+    pkgpath = os.getcwd()
+    srcfiles = get_src_files(kwargs['build-sys'], pkgpath)
+
+    if len(srcfiles) == 0:
+        create_summary_report(kwargs, 0, 0)
+        raise NoSourceFilesFoundError('ERROR: No Source Files Found')
+
+    compiled, failed = list(), list()
+
+    with CompilationSummary(kwargs) as nbs_obj:
+        for filename in srcfiles:
+            compile_cmd = get_compilation_cmd(filename, pkgpath)
+            errcode, errmsg, environ = run_cmd(compile_cmd, cwd=pkgpath)
+            nbs_obj.addinfo(filename, compile_cmd, pkgpath, errcode, errmsg, environ)
+
+            if errcode == 0:
+                compiled.append(filename)
+            else:
+                failed.append(filename)
+
+    create_summary_report(kwargs, len(srcfiles), len(compiled))
+
+    if len(compiled) == 0:
+        raise CompilationFailedError('ERROR: All Source Files Failed Compilation')
+    else:
+        create_build_file(kwargs['build-sys'], kwargs['build-file'], compiled)
+        run_build_clean(kwargs)
+
+def process_cmd_line_args():
+    parser = argparse.ArgumentParser(usage='''%(prog)s --build-sys make --error-file $PWD/source-compiles.xml --build-file $PWD/build.xml --source-compile-log $PWD/source-compile-log.out''',
+                                     description='''Helper Program to Assess Packages with No Build Files''')
+
+    parser.add_argument('-v', '--version',
+                        action='version',
+                        version='%(prog)s {0}'.format(CompilationSummary.version))
+    
+    parser.add_argument('--build-sys',
+                        required=True,
+                        type=str,
+                        dest='build-sys',
+                        choices=['make', 'ant'],
+                        help='Should be Make for C/C++ and ant for Java')
+
+    parser.add_argument('--build-file',
+                        required=True,
+                        type=str,
+                        dest='build-file',
+                        help='Path to the build file')
+
+    parser.add_argument('--source-compiles',
+                        required=False,
+                        type=str,
+                        default=None,
+                        metavar='SOURCE_COMPILES_XML_FILE',
+                        dest='source_compiles_xmlfile',
+                        help='''Path to the xml file that has compilation details
+                        of all the source files in the package''')
+
+    parser.add_argument('--msg',
+                        required=False,
+                        type=str,
+                        default=None,
+                        metavar='SOURCE_COMPILE_LOG_FILE',
+                        dest='source_compile_logfile',
+                        help='''Path to a file indicating the number of source files
+                        found, and the number of successful compiles in the
+                        short message "source-files: #, compilable: #" ''')
+
+    parser.add_argument('--package-short-name',
+                        type=str,
+                        dest='package-short-name',
+                        metavar='<package-short-name>',
+                        help='')
+
+    parser.add_argument('--package-version',
+                        type=str,
+                        dest='package-version',
+                        metavar='<package-version>',
+                        help='')
+
+    parser.add_argument('--platform',
+                        type=str,
+                        metavar='<platform-name>',
+                        help='')
+
+    parser.add_argument('--package-root-dir',
+                        type=str,
+                        dest='package-root-dir',
+                        metavar='<package-root-dir>',
+                        help='')
+
+    parser.add_argument('--build-root-dir',
+                        type=str,
+                        dest='build-root-dir',
+                        metavar='<build-root-dir>',
+                        help='')
+    
+    return parser.parse_args()
+
+
+def main(args):
+    try:
+        create_compilation_report(args)
+    except (NoSourceFilesFoundError,\
+            CompilationFailedError,\
+            BuildCleanFailedError) as err:
+        print(err, file=sys.stderr)
+        if isinstance(err, NoSourceFilesFoundError):
+            sys.exit(2)
+        elif isinstance(err, CompilationFailedError):
+            sys.exit(3)
+        else:
+            sys.exit(4)
+    except Exception as err:
+        print(err, file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main(vars(process_cmd_line_args()))
+    sys.exit(0)

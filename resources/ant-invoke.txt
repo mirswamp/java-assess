@@ -1,0 +1,10 @@
+<executable> 
+	-buildfile <build-file>
+	-lib <build-monitor-lib>
+	-listener <build-monitor-class>
+	-noinput
+	-nouserlib
+	-Dswamp.build.monitor.output=<build-monitor-output-file>
+	<build-opt% >
+	<build-target% >
+

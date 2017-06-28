@@ -1,0 +1,12 @@
+<executable>
+	--batch-mode
+	--file <build-file>
+	-s <maven-settings-xml-file>
+	-DskipTests
+	-Dmaven.wagon.provider.http=httpclient 
+	-Dswamp.build.target=<swamp-build-target-property>
+	-Dswamp.build.monitor.output=<build-monitor-output-file>
+	<build-opt% >
+	<build-target% >
+	<swamp-maven-plugin>
+

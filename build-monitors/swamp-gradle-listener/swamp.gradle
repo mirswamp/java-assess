@@ -1,0 +1,182 @@
+import org.gradle.api.tasks.compile.CompileOptions;
+import groovy.xml.MarkupBuilder;
+import java.io.PrintWriter;
+import java.io.File;
+
+
+class SwampBuildListener extends BuildAdapter implements TaskExecutionListener {
+
+  PrintWriter print_writer;
+  MarkupBuilder markup_builder;
+  Object build_artifacts;
+  Object jc;
+  int id;
+  
+  static final String COMPILE_JAVA = "java-compile";
+  static final String SRCDIR = "srcdir";
+  static final String SRCFILE = "srcfile";
+
+  static final String DESTDIR = "destdir";
+  static final String INCLUDE = "include";
+  static final String EXCLUDE = "exclude";
+
+  static final String SOURCE = "source";
+  static final String TARGET = "target";
+  static final String ENCODING = "encoding";
+
+  static final String CLASSPATH = "classpath";
+  static final String BOOTCLASSPATH = "bootclasspath";
+  static final String SOURCEPATH = "sourcepath";
+  
+  public void projectsEvaluated(Gradle gradle) {
+	String outfile = "build_artifacts.xml";
+	Project project = gradle.getRootProject();
+
+	if (project.getProperties().containsKey("SwampListenerOutfile")) {
+	  outfile = project.property("SwampListenerOutfile")
+	}
+
+	print_writer = new PrintWriter(new File(outfile))
+	markup_builder = new MarkupBuilder(print_writer)
+	build_artifacts =  markup_builder.createNode("build-artifacts")
+	id = 1
+  }
+  
+  public void buildFinished(BuildResult result) {
+	if (result.failure != null) {
+	  result.failure.printStackTrace()
+	}
+	if (jc) {
+		markup_builder.nodeCompleted(build_artifacts, jc)
+		jc = null
+	}
+	markup_builder.nodeCompleted(null, build_artifacts)
+	print_writer.close();
+  }
+
+  public void beforeExecute(Task task) {
+
+	if ((task instanceof org.gradle.api.tasks.compile.JavaCompile)
+		&& task.getSource().getFiles())  {
+
+	  jc = markup_builder.createNode(SwampBuildListener.COMPILE_JAVA, ["id":id++])
+
+	  if (task.getProject().sourceSets) {
+		def srcdir_tag = markup_builder.createNode(SwampBuildListener.SRCDIR)
+
+		task.getProject().sourceSets.each { srcset ->
+		  srcset.getJava().getSrcDirs().each { srcdir ->
+			if (srcdir.isDirectory()) {
+			  markup_builder.nodeCompleted(srcdir_tag,
+										   markup_builder.createNode("file", srcdir))
+			}
+		  }
+		}
+		markup_builder.nodeCompleted(jc, srcdir_tag)
+	  }
+	  
+	  if (!task.getSource().isEmpty()) {
+		def srcfile =  markup_builder.createNode(SwampBuildListener.SRCFILE)
+		task.getSource().getFiles().each {
+		  markup_builder.nodeCompleted(srcfile,
+									   markup_builder.createNode("file", "$it"))
+		}
+		markup_builder.nodeCompleted(jc, srcfile)
+	  }
+
+	  if (task.getDestinationDir() != null) {
+		def dstdir = markup_builder.createNode(SwampBuildListener.DESTDIR)
+		markup_builder.nodeCompleted(dstdir,
+									 markup_builder.createNode("file", task.getDestinationDir()))
+		markup_builder.nodeCompleted(jc, dstdir)
+	  }
+
+	  markup_builder.nodeCompleted(jc, markup_builder.createNode(SwampBuildListener.SOURCE,
+																 task.getSourceCompatibility()))
+
+	  markup_builder.nodeCompleted(jc, markup_builder.createNode(SwampBuildListener.TARGET,
+																 task.getTargetCompatibility()))
+	  
+	  if (task.getIncludes() != null && !task.getIncludes().isEmpty()) {
+		def include = markup_builder.createNode(SwampBuildListener.INCLUDE)
+		task.getIncludes().each {
+
+		  markup_builder.nodeCompleted(include,
+									   markup_builder.createNode("pattern", "$it"))
+		}
+		markup_builder.nodeCompleted(jc, include)
+	  }
+
+	  if (task.getExcludes() != null && !task.getExcludes().isEmpty()) {
+		def exclude = markup_builder.createNode(SwampBuildListener.EXCLUDE)
+		task.getExcludes().each {
+		  markup_builder.nodeCompleted(exclude,
+									   markup_builder.createNode("pattern", "$it"))
+		  markup_builder.nodeCompleted(jc, exclude)
+		}
+	  }
+
+	  CompileOptions options = task.getOptions()
+
+	  if (options.getEncoding() != null) {
+		markup_builder.nodeCompleted(jc,
+									 markup_builder.createNode(SwampBuildListener.ENCODING,
+															   options.getEncoding()))
+	  }
+
+	  if (task.getClasspath() && !task.getClasspath().isEmpty()) {
+		def cp = markup_builder.createNode(SwampBuildListener.CLASSPATH)
+		task.getClasspath().getFiles().each {
+		  markup_builder.nodeCompleted(cp, markup_builder.createNode("file", "$it"))
+		}
+		markup_builder.nodeCompleted(jc, cp)
+	  }
+	  
+	  /*
+	  options.getCompilerArgs().each {
+		def cp = markup_builder.createNode("compiler-arg", "$it")
+		markup_builder.nodeCompleted(jc, cp)
+	  }
+
+	  if (options.getForkOptions() != null) {
+		options.getForkOptions().getJvmArgs().each {
+		  def cp = markup_builder.createNode("jvm-arg", "$it")
+		  markup_builder.nodeCompleted(jc, cp)
+		}
+	  }
+	  */
+	  if (!options.isDebug()) {
+		options.debugOptions.setDebugLevel("lines,vars,source")
+	  }
+	}
+  }
+
+  public void afterExecute(Task task, TaskState state) {
+	if ((task instanceof org.gradle.api.tasks.compile.JavaCompile)
+		&& task.getSource().getFiles())  {
+
+	  CompileOptions options = task.getOptions()
+
+	  /* bootclasspath harvested AFTER other plugins run to set it */
+	  Object gbc = options.getBootClasspath();
+	  if (gbc) {
+		def bcp = markup_builder.createNode(SwampBuildListener.BOOTCLASSPATH)
+		gbc.split(':').each {
+		  markup_builder.nodeCompleted(bcp, markup_builder.createNode("file", "$it"))
+		}
+		markup_builder.nodeCompleted(jc, bcp)
+	  }
+
+	  /* if you don't complete the node, the generated XML is bad, and
+	     that causes other random failures all through java-assess code
+	     and the python XML layers. */
+	  if (jc) {
+		markup_builder.nodeCompleted(build_artifacts, jc);
+		jc = null;
+	  }
+	}
+  }
+    
+}
+
+gradle.addListener(new SwampBuildListener());
