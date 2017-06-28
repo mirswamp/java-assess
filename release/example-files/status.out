@@ -1,0 +1,12 @@
+NOTE: begin
+PASS: package-unarchive                                                1.066570s
+PASS: build                                                           24.432730s
+PASS: build-archive                                                    9.759173s
+PASS: tool-unarchive                                                   0.273945s
+PASS: assess (1, 0)                                                   48.010530s
+PASS: results-archive                                                  0.053358s
+PASS: resultparser-unarchive                                           0.029085s
+PASS: parse (weaknesses: 625)                                         15.516834s
+PASS: parsed-results-archive                                           0.062882s
+PASS: all                                                             99.208565s
+NOTE: end

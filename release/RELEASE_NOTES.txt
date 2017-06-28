@@ -1,0 +1,507 @@
+-----------------------------------
+java-assess version 2.5.6 (Thu May 25 10:22:12 CDT 2017)
+-----------------------------------
+- Fixed Jtest bug with include file filters: If package name does not match with the directory structure
+
+- Refactored swamp-maven-plugin and how swamp-maven-plugin is attached to the build
+
+-----------------------------------
+java-assess version 2.5.5 (Fri May 19 11:20:42 CDT 2017)
+-----------------------------------
+- Fixed Jtest bug with include file filters: If package name does not match with the directory structure
+
+- Added package-name, package-version, platform-name to assessment_summary.xml
+
+- Fixed package-root-dir
+
+- Deleted files manually
+
+- Add ant, maven and gradle versioning for non-androiid assessments
+
+- Android has its own considerations
+
+- Configure java for android sdk
+
+- Do java7/java8 java options (they changed)
+
+- Add java9 to some platforms
+
+- Configure java-android-sdk for sdk-dependent java
+
+- More flexible /p/swamp
+
+- Dont copy symlinks
+
+- Add el7 dependencies
+
+- Merge branch 'master' of /p/swamp/gits/java-assess-v2
+
+-----------------------------------
+java-assess version 2.5.1 (Fri Feb 17 15:32:54 CST 2017)
+-----------------------------------
+
+- Added support for Application Health Check
+
+-----------------------------------
+java-assess version 2.4.12 (Fri Oct 21 15:19:50 CDT 2016)
+-----------------------------------
+- SKIP install OS dependencies if internet-inaccessible attribute in run.conf
+
+- Merge branch 'master' of grilled.cs.wisc.edu:/p/swamp/gits/java-assess-v2
+
+- Updated version info and release/RELEASE_NOTES.txt
+
+-----------------------------------
+java-assess version 2.4.11 (Wed Oct 19 15:27:19 CDT 2016)
+-----------------------------------
+- Fixed issue with anrdoid lint for android+maven
+
+-----------------------------------
+java-assess version 2.4.10 (Tue Oct 18 11:30:33 CDT 2016)
+-----------------------------------
+- Removed wrapping of lines in detailed task message
+
+- MAVEN_OPT is now set to 2/3's of System memory
+
+- Changed tool-compatibility-runtime and tool-compatibility-package to tool-runtime-compatibility and tool-package-compatibility tasks
+
+-----------------------------------
+java-assess version 2.4.9 (Mon Oct 17 14:52:50 CDT 2016)
+-----------------------------------
+- Fixed 'argument list too long' bug with Lizard
+
+- Added tool-compatibility-runtime and tool-compatibility-package tasks
+
+-----------------------------------
+java-assess version 2.4.8 (Wed Oct 12 14:23:25 CDT 2016)
+-----------------------------------
+- cd-package-dir|cd-config-dir|cd-build-dir to chdir-package-dir|chdir-config-dir|chdir-build-dir
+
+-----------------------------------
+java-assess version 2.4.7 (Mon Oct 10 17:00:09 CDT 2016)
+-----------------------------------
+- Fixed bug with LogTaskStatus.task_msg
+
+- Handling invalid build systems
+
+-----------------------------------
+java-assess version 2.4.6 (Wed Oct  5 19:14:57 CDT 2016)
+-----------------------------------
+- Added support for error handling for invalid pkg-dir, build-dir, config-dir
+
+- Changed status_dot_out.skip_task('None') to status_dot_out.skip_task('none')
+
+- Used autopep8 to fix reported by flake8
+
+- Retry if OSDependencyInstall failures
+
+- Improved error reporting for download dependencies
+
+- When no-files SKIP: assess
+
+- Added support for OwaspDependencyCheck for apk analysis
+
+- Merged from master src/utillib.py
+
+- Merged from master
+
+- Fixed issues reported by flake8 in assess.py and build_java.py
+
+- Fix error message not set bug
+
+- Allow for tools that do not need to be unarchived
+
+- Add new platforms and next platforms
+
+- Add new platforms
+
+- Add platform meta-types
+
+- Saved merged code from 2.3.9e
+
+- Merged from 2.3.9e
+
+- Oops, wrong path for vamshi hack
+
+- Add note that ivy inclusion should be controllable in the future
+
+- Configure java for many different environments
+
+- If java not found, default to no-changes platform java
+
+- Remove platform restrictions for java compatability check
+
+- Make it work at CS, and a hack for Vamshi Laptop
+
+-----------------------------------
+java-assess version 2.4.0 (Wed May 25 22:20:25 CDT 2016)
+-----------------------------------
+- Fixed the bug with platform name in assessment_summary.xml
+
+- Fixed issue with spaces in file paths that were bothering error-prone
+
+- Added support for OWASP Dependency Check
+
+- Fixed sonatype health check bug with duplicate entries
+
+- Now the list of files to analyse are written into another file and that filepath is passed as an argument
+
+- Creating a assessment-report-1.json with dummy data, this is useful for creating the result parser
+
+-----------------------------------
+java-assess version 2.3.8 (Mon Mar 28 09:47:32 CDT 2016)
+-----------------------------------
+- Added support for Sonatype App Health Check
+
+-----------------------------------
+java-assess version 2.3.6 (Mon Feb 29 11:41:03 CST 2016)
+-----------------------------------
+- Cleaned up utillib.run_cmd method
+- noarch directory inside the top-level java-assess-x.x.x
+
+-----------------------------------
+java-assess version 2.3.5 (Thu Feb 18 11:57:16 CST 2016)
+-----------------------------------
+- Removed uuid-runtime and ncompress from sys-os-dependencies.conf
+
+- Findbugs stdin file does not have to be a open file descriptor, run_cmd opens and closes arguments passed as filepaths
+
+- Log gradle output correctly, Stop override installation on android, Log status of software install
+
+- Created a base class SwaTool with common functionality, all others derive from it
+
+- Lizard: encoding from build artifacts is set as LANG environment variable for assessment commands
+
+- For errorprone, the source files are written to a file, and the tool reads the filapaths from the file
+
+- Parasoft Jtest failures with Juliet type packages has been fixed
+
+- Code to search for classfiles has been seperated and put into Findbugs specific class
+
+- Changes made to accommodate lizard reporting on stdout instead of a file
+
+-----------------------------------
+java-assess version 2.3.0 (Thu Jan 21 10:20:21 CST 2016)
+-----------------------------------
+- Java 8 support available on rhel-6.4-64 and ubuntu-12.04-64 platforms
+
+- Latest versions of Ant and Maven are carried along and used by the framework
+
+- Build commands are also passed to shell for execution
+
+- The framework will now search for class files only for Findbugs. If in the future, another tool that works on class files is added then this has to be generalized futher to support other tools
+
+- Updated plyj (https://github.com/musiKk/plyj/) with modifications to make it work with java8 code
+
+- Updated ply (http://www.dabeaz.com/ply/) to 3.8
+
+-----------------------------------
+java-assess version 2.1.7 (Mon Jan 4 15:56:08 2016 -0600)
+-----------------------------------
+
+- Fix string/array handling in config-cmd config-opt processing to match new all-string config-cmd
+
+- Merge branch 'master' of rydia.cs.wisc.edu:/p/swamp/gits/java-assess-v2 into java8
+
+- Removed execute permission on lib/plyj/parser.py
+
+- Merge branch 'master' of rydia.cs.wisc.edu:/p/swamp/gits/java-assess-v2
+
+- use get-platform for platform info
+
+- more error checking
+
+- Use standard shell constructs
+
+- Correct support for more platforms
+
+- add centos support
+
+- Provide a default value for package-dir; it is always needed by any assessment, even those with out packages.
+
+- Vamshi's changes to allow APK evaluations on .apk files
+
+- Vamshi's Fix to allow arbitrary goals to work correctly
+
+- Vamshi's Fix to allow arbitrary goals to work correctly
+
+- Allow quotedstring for executable
+
+- Use system() shell processing for the tool-install-cmd
+
+- Make build-cmd use system() semantics for command and arguments.  Append arguments to command.  Tell run_cmd to use a shell to perform those expansions correctly.
+
+- Install build listener as a build listener,not as a logger.  Installation as a logger caused logging to fail and gradle to throw exceptions for normal build errors that required logging.
+
+- Remove project-cache-dir now that .gradle is symlinked
+
+-----------------------------------
+java-assess version 2.1.5 (Mon Oct 19 09:54:03 CDT 2015)
+-----------------------------------
+
+- Config command now executes as bash command: 'bash -c <config-cmd> <config-opt>'
+
+-----------------------------------
+java-assess version 2.1.3 (Wed Sep  2 15:06:51 CDT 2015)
+-----------------------------------
+
+- Fixed bug with handling of zero files compiled in the build
+
+-----------------------------------
+java-assess version 2.1.2 (Thu Aug  20 16:06:51 CDT 2015)
+-----------------------------------
+
+- Stop use of settings file and localRepo setting
+
+- Stop use of localRepository
+
+- Reduce settings file to actual contents -- no functional change
+
+- Use symbolic links to guarantee that .ant, .m2, and .gradle directories are completely archived in the build directory
+
+- Add android+maven build system
+
+- Use higher-function fetch tool to stop downloads of HTML error messages and provide reliable maven fetching.
+
+- More reliable failure detection
+
+- Use standard shell constructs
+
+- 2.1.1 version change
+
+- Warning no longer applicable
+
+-----------------------------------
+java-assess version 2.1.0 (Tue Jul 28 14:30:17 CDT 2015)
+-----------------------------------
+
+- Fix config-cmd semantics to allow arbitrary shell commands to work.
+- Add support for android+gradle build environment
+
+-----------------------------------
+java-assess version 2.0.7 (Fri Jun  5 17:40:46 UTC 2015)
+-----------------------------------
+- Added a quick fix that does some cleaning up that can avoid problems caused by VM restarts
+
+-----------------------------------
+java-assess version 2.0.7 (Wed May 13 01:22:30 UTC 2015)
+-----------------------------------
+- Removed '--merge' option from result parser command
+
+-----------------------------------
+java-assess version 2.0.6 (Tue May 12 20:15:54 UTC 2015)
+-----------------------------------
+- Added swamp-maven-plugin-install task that will be written to status.out
+
+-----------------------------------
+java-assess version 2.0.5 (Tue Apr 21 23:30:34 UTC 2015)
+-----------------------------------
+- Better debugging information
+
+- added replace-path element to the assessment_summary/assessment
+
+- For configure and build, PWD environment variable is now set to CWD
+
+-----------------------------------
+java-assess version 2.0.4 (Thu Apr  2 19:51:16 UTC 2015)
+-----------------------------------
+- Fixed the freak issue with missing self. from no_build_helper
+
+- work around for java bytecode assessment, it now works when build-sys is empty
+
+-----------------------------------
+java-assess version 2.0.3 (Tue Mar 31 18:18:10 UTC 2015)
+-----------------------------------
+- Fixed bug with android lint
+
+-----------------------------------
+java-assess version 2.0.2 (Tue Mar 31 15:43:03 UTC 2015)
+-----------------------------------
+- Fixed bug that writes absolute paths instead of relative paths to parsed results
+
+- Replaced build-sys/gradle and build-sys/ivy directories with soft-links with same names pointing to build-sys/gradle-2.3 and build-sys/ivy-2.3.0. This brings down the size of java-assess-2.0.2 by half when compared to java-assess-2.0.1
+
+-----------------------------------
+java-assess version 2.0.1 (Wed Mar 25 13:23:56 UTC 2015)
+-----------------------------------
+
+- Cleaned up code
+
+- Fixed bug with quotes around android-sdk-target, the quotes weren't necessary
+
+- Updated release notes
+
+-----------------------------------
+java-assess 2.0 version  (Sat Mar 21 00:31:02 UTC 2015)
+-----------------------------------
+- Support for Gradle build system
+
+- Added no_build_helper v2.0: with support for adding local jar files to compilation classpath
+
+- Added Apache License
+
+-----------------------------------
+java-assess version 1.0.4 (Tue Jan 13 22:22:10 UTC 2015)
+-----------------------------------
+- Fixed 'extra spaces warnings' reported by flake8
+
+- Fixed maven bug with multiple values to build-target
+
+- Ran pylint and fixed the reported issues, mostly cosmetic
+
+- Fixed a bug with spaces in package.conf:build-target and package.conf:build-opt
+
+- Fixed an issue with error handling when tool installation fails
+
+-----------------------------------
+java-assess version 1.0.3 (Tue Jan  6 21:12:04 UTC 2015)
+-----------------------------------
+- Handles white spaces in filepaths
+
+- Modifications for using the new confreader
+
+- Updated Release Notes & Removed trailing white spaces
+
+-----------------------------------
+java-assess version 1.0.2 (Thu Dec 18 22:21:04 UTC 2014)
+-----------------------------------
+- Handled the autopsy package case that had an unexpanded ant variable in bootclasspath
+
+- Support for tools like Android Lint that don't depend on build-artifacts:srcfiles, classfiles
+
+- New implementation of command generator utility
+
+-----------------------------------
+java-assess version 0.9.9 (Thu Nov 20 20:56:52 UTC 2014)
+-----------------------------------
+- Added platform name support for android-ubuntu-12.04-64
+
+- Added dependencies-android-ubuntu.. to sys-os-dependencies.conf
+
+-----------------------------------
+java-assess version 0.9.8 (Thu Nov 13 19:24:04 UTC 2014)
+-----------------------------------
+- Added Support to handle license related errors
+
+-----------------------------------
+java-assess version 0.9.7 (Tue Nov  4 06:04:41 UTC 2014)
+-----------------------------------
+- New run.sh
+
+- Support for Installing tools, contacting License Server
+
+-----------------------------------
+java-assess version 0.9.6 (Mon Oct 27 16:44:59 UTC 2014)
+-----------------------------------
+- Added OS package 'ncompress' to sys-os-dependencies.conf to support extracting of tar.Z archives
+
+-----------------------------------
+java-assess version 0.9.5 (Sun Oct 12 22:36:33 UTC 2014)
+-----------------------------------
+- For Java classfiles, using the plyj parser to get 
+  classnames rather than using the filenames
+
+-----------------------------------
+java-assess version 0.9.4 (Fri Oct  3 12:47:30 UTC 2014)
+-----------------------------------
+- Fixed bug with build-artifact-id
+
+- Made enhancements on error reporting in status.out
+
+- Cleaned up issues reported by pylint
+
+- For FindBugs, classfiles list is now stored in a file and sent through stdin 
+  rather than command line
+
+- Renamed cli.py to cli_argparse.py
+
+- Moved get_platform function from build_assess_driver to get-platform file
+
+- Moved ply and plyj out of java-assess to a seperate lib directory. 
+  Added scripts/lib directory to PYTHONPATH env variable
+
+- Android support is added. build-sys in package.conf can now have
+  android+ant 
+  android+ant+ivy
+  android+maven
+
+- Added support for running configuration commands before building a package
+
+-----------------------------------
+java-assess version 0.9.0 (Wed Sep  3 05:41:48 UTC 2014)
+-----------------------------------
+- Added No Build Support
+
+- Added Support for Jar files
+
+-----------------------------------
+java-assess version 0.8.6 (Tue May 13 17:55:13 UTC 2014)
+-----------------------------------
+- New run.sh file (from c-assess)
+
+- Fixed FindBugs missing source info bug
+
+- Updated plyj library
+
+-----------------------------------
+java-assess version 0.8.5 (Sun May  4 03:01:37 UTC 2014)
+-----------------------------------
+
+- For Java Bytecode Assessment, Java ClassPath behaviour for ClassPath and AuxClassPath
+
+- Fixed JIRA issue: (UW-4) Cannot assess Java Bytecode packages
+
+- Enhanced AntBuildListener to record the actual command line options and source files list
+
+- Fixed the error with package-root-dir written to assessment_summary.xml
+
+-----------------------------------
+java-assess version 0.8.2 (Tue Apr 22 14:36:07 UTC 2014)
+-----------------------------------
+- Fixed a bug in AntBuildListener that was not adding include, exclude file filters
+
+- Fixed a bug related to include, exclude file filters in java-assess scripts
+
+-----------------------------------
+java-assess version 0.8.1 (Wed Apr 16 19:55:03 UTC 2014)
+-----------------------------------
+- Fixed 'target release 1.5 conflicts with default source release 1.7' with Ant builds
+
+-----------------------------------
+java-assess version 0.8.0 (Mon Apr 14 23:49:46 UTC 2014)
+-----------------------------------
+- Bug fix for Maven build errors caused by overriding user build-target with default
+
+- Updated PATH env variable to use Java 1.7 on debian-7.0-64, was needed for error-prone tool
+
+- Added support for CheckStyle-5.7 and error-prone-1.1.1
+
+-----------------------------------
+java-assess version 0.7.1 (Wed Apr  2 10:18:24 CDT 2014)
+-----------------------------------
+- The status.out file will have a multi-line description of the error/failures
+
+- Build system output is now directed to build/build_stdout.out file
+
+- Added new features that will help in adding new tools easily
+
+- Install OS dependencies is now done from python scripts
+
+- Install OS dependencies added to status.out
+
+- Assess in status.out now has pass, fail prefixes
+
+- Added support for spacies in configuration files
+
+-------------------------------------
+java-assess  version 0.6.4 (Wed Feb  5 20:53:14 UTC 2014)
+-------------------------------------
+- changed the parsed results output filename and log filename, as reported by Dave B
+
+-------------------------------------
+java-assess  version 0.6.3 (Thu Feb 04 15:26:23 2014 +0000)
+-------------------------------------
+- Can assess Java Packages with Ant and Maven Build Systems.
+- Tested to work with FindBugs 2.0.2 and 2.0.3
+- Tested to work with PMD 5.0.4
+- Can build, build+assess, build+assess+parse, assess, assess+parse, parse

@@ -1,0 +1,9 @@
+<executable>
+	--no-daemon
+	--rerun-tasks
+	-Dorg.gradle.project.SwampListenerOutfile=<build-monitor-output-file>
+	--build-file <build-file>
+	--init-script <build-monitor>
+	<build-opt% >
+	<build-target% >
+

@@ -1,0 +1,378 @@
+#!/bin/bash
+
+p=`basename $0`
+
+## which versions of these are selected as default
+ant_version=1.9.9
+maven_version=3.3.9
+gradle_version=2.14.1
+
+opt_swamp="/opt/swamp"
+android_config="${opt_swamp}/android/config.sh"
+
+
+while [ $# -gt 0 ] ; do
+	case $1 in
+	--in-dir)
+		VMINPUTDIR="$2"
+		shift
+		;;
+	--out-dir)
+		VMOUTPUTDIR="$2"
+		shift
+		;;
+	--base-dir)
+		echo ""
+		shift
+		;;
+	--plat-name)
+		export VMPLATNAME="$2"
+		shift
+		;;
+	--plat-uuid)
+		VMPLATUUID="$2"
+		shift
+		;;
+	--os-pkg-install-cmd)
+		export VMOSPACKAGEINSTALL="$2"
+		shift
+		;;
+	--version)
+		exit 0
+		;;
+	esac
+	shift
+done
+
+function untar {
+    tar -xf ${1}
+    echo $(tar tzf ${1} | sed -e 's:/.*::' | uniq)
+}
+
+if [ -z "${VMOSPACKAGEINSTALL}" ] ; then
+    export VMOSPACKAGEINSTALL="${VMINPUTDIR}/install-dependencies"
+fi
+
+if [ -z "${VMPLATNAME}" ] ; then
+    export VMPLATNAME=`"${VMINPUTDIR}/get-platform"`
+fi
+
+## set JAVA_HOME for build systems
+export JAVA_HOME="$( readlink -f "$( which javac )" | sed "s:bin/[^/]*$::" )"
+
+## debian's java install is broken by the SWAMP installers.
+## XXX this should be removed once old VMs are dead.
+#if [ "${VMPLATNAME}" = "debian-7.0-64" ] ; then
+#    echo $p: forcing java ${JAVA_HOME}/jre/bin
+#    PATH="${JAVA_HOME}/jre/bin:${PATH}"
+#fi
+
+echo
+echo $p: java versions
+## Which java is used.
+for i in javac java ; do
+	echo ========== $i ==========
+	wi=`which $i 2>/dev/null`
+	if [ -n "$wi" ] ; then
+		echo $p: $i: found at $wi
+		$wi -version
+	else
+		echo $p: $i: not available in defaults
+	fi
+done
+
+## Only use sudo if it is needed
+if [ `id -u` -eq 0 ] ; then
+	asroot=
+else
+	asroot=sudo
+fi
+
+echo ========== upgrading build systems ==========
+
+
+## see if the package requires a different version
+
+## XXX this is inlined for now, it will switch once the platform layer
+## takes care of this.
+## Same for the installation code below
+## Once this is all fixed we will allow for "system" versions
+## of maven, gradle, and ant as well as named versions.  This is
+## an interim step.
+
+## EXCEPT in an android environment ... where android takes care of this
+## or specifies versions XXX watch out double-non-indentation XXXX
+## XXX start no-indent
+if [ ! -f "$android_config" ] ; then
+
+## try to do versioning if the package needs it
+pc="$VMINPUTDIR/package.conf" 
+t=
+if [ -f "$pc" ] ; then
+	t=`grep '^ant-version=' $pc 2>/dev/null`
+	if [ -n "$t" ] ; then
+		echo $p: "$t"
+		## [space tab] both times
+		t=`expr "$t" : 'ant-version=[ 	]*\([^ 	]*\)'`
+		if [ -n "$t" ] ; then
+			echo $p: $t: user-specified ant-version
+			pc_ver="$t"
+			t="apache-ant-${pc_ver}"
+			td="$opt_swamp/$t"
+			ta="$VMINPUTDIR/${t}-bin.zip"
+			## acceptable IFF
+			## 1) already installed
+			## 2) archive exists for install
+			if [ -d "$td" ] ; then
+				ant_version="$pc_ver"
+				echo $p: version installed
+			elif [ -s "$ta" ] ; then
+				ant_version="$pc_ver"
+				echo $p: version archive available
+			else
+				echo $p: version unavailable
+			fi
+		else
+			echo $p: package.conf: IMPROPER ant-version 1>&2
+		fi
+	fi
+
+	t=`grep '^maven-version=' $pc 2>/dev/null`
+	if [ -n "$t" ] ; then
+		echo $p: "$t"
+		## [space tab] both times
+		t=`expr "$t" : 'maven-version=[ 	]*\([^ 	]*\)'`
+		if [ -n "$t" ] ; then
+			echo $p: $t: user-specified maven-version
+			pc_ver="$t"
+			t="apache-maven-${pc_ver}"
+			td="$opt_swamp/$t"
+			ta="$VMINPUTDIR/${t}-bin.zip"
+			## acceptable IFF
+			## 1) already installed
+			## 2) archive exists for install
+			if [ -d "$td" ] ; then
+				maven_version="$pc_ver"
+				echo $p: version installed
+			elif [ -s "$ta" ] ; then
+				maven_version="$pc_ver"
+				echo $p: version archive available
+			else
+				echo $p: version unavailable
+			fi
+		else
+			echo $p: package.conf: IMPROPER maven-version 1>&2
+		fi
+	fi
+
+	t=`grep '^gradle-version=' $pc 2>/dev/null`
+	if [ -n "$t" ] ; then
+		echo $p: "$t"
+		## [space tab] both times
+		t=`expr "$t" : 'gradle-version=[ 	]*\([^ 	]*\)'`
+		if [ -n "$t" ] ; then
+			echo $p: $t: user-specified gradle-version
+			pc_ver="$t"
+			t="gradle-${pc_ver}"
+			td="$opt_swamp/$t"
+			ta="$VMINPUTDIR/${t}-bin.zip"
+			## acceptable IFF
+			## 1) already installed
+			## 2) archive exists for install
+			if [ -d "$td" ] ; then
+				gradle_version="$pc_ver"
+				echo $p: version installed
+			elif [ -s "$ta" ] ; then
+				gradle_version="$pc_ver"
+				echo $p: version archive available
+			else
+				echo $p: version unavailable
+			fi
+		else
+			echo $p: package.conf: IMPROPER gradle-version 1>&2
+		fi
+	fi
+
+fi
+unset pc t td ta pc_ver
+fi		## end android double non-indentation
+## XXX end no-indent
+
+
+## temporarily upgrade swamp software via this method;
+## don't install software if it is already installed
+
+## XXX arguably we could look at package.conf and check the build-sys;
+## the problem is that some build systems use other build systems, so
+## we'll just go ahead and install them all to make things work.
+
+# XXX this was changed to not over-ride the installed tools
+# on the android vm.   If it isn't installed, install it.
+# If installed, use it.
+
+## XXX see notes above why this is inlined for now; leave it alone,
+## this stuff will be going to the platform layer later.
+
+
+## XXX way better  to look for ant-* maven-* and gradle-* in in-files
+## and just install them nicely.
+## XXX or this thing should be edited by the install process; but auto-selection
+## is better
+
+v="apache-ant-$ant_version"		## version	what it is
+t="$VMINPUTDIR/${v}-bin.zip"		## tarball	where it comes from
+r="$opt_swamp/$v"			## root		where it goes
+## only install if it isn't installed, and the archive is present
+if [ ! -d "$r"  -a  -s "$t" ] ; then
+	echo
+	echo $p: install $v
+
+	$asroot unzip -q -n "$t" -d $opt_swamp
+	s=$?
+	if [ $s -ne 0 ] ; then
+		echo $p: $v: install failed status=$s
+		# change this name to prevent using an incomplete install
+		r="${r}-failed"
+	fi
+elif [ -d "$r" ] ; then
+	echo $p: $v: already installed
+elif [ ! -s "$t" ] ; then
+	echo $p: $t: install archive missing
+fi
+if [ -d "$r" ] ; then
+	export ANT_HOME="$r"
+	export PATH="$ANT_HOME/bin:$PATH"
+fi
+
+
+v="apache-maven-$maven_version"
+t="$VMINPUTDIR/${v}-bin.zip"
+r="$opt_swamp/$v"
+if [ ! -d "$r"  -a  -s "$t" ] ; then
+	echo
+	echo $p: install $v
+
+	$asroot unzip -q -n "$t" -d $opt_swamp
+	s=$?
+	if [ $s -ne 0 ] ; then
+		echo $p: $v: install failed status=$s
+		# change this name to prevent using an incomplete install
+		r="${r}-failed"
+	fi
+elif [ -d "$r" ] ; then
+	echo $p: $v: already installed
+elif [ ! -s "$t" ] ; then
+	echo $p: $t: install archive missing
+fi
+if [ -d "$r" ] ; then
+	export M2_HOME="$r"
+	export PATH="$M2_HOME/bin:$PATH"
+fi
+unset s t r v
+
+
+v="gradle-$gradle_version"
+t="$VMINPUTDIR/${v}-bin.zip"
+r="$opt_swamp/$v"
+## only install if it isn't installed, and the archive is present
+if [ ! -d "$r"  -a  -s "$t" ] ; then
+	echo
+	echo $p: install $v
+
+	$asroot unzip -q -n "$t" -d $opt_swamp
+	s=$?
+	if [ $s -ne 0 ] ; then
+		echo $p: $v: install failed status=$s
+		# change this name to prevent using an incomplete install
+		r="${r}-failed"
+	fi
+elif [ -d "$r" ] ; then
+	echo $p: $v: already installed
+elif [ ! -s "$t" ] ; then
+	echo $p: $t: install archive missing
+fi
+if [ -d "$r" ] ; then
+	export GRADLE_HOME="$r"
+	export PATH="$GRADLE_HOME/bin:$PATH"
+fi
+unset s t r v
+
+## XXX should delay setting ANT, M2, GRADLE _HOME until after android
+## is configured.  That would make the $PATH a lot more usable, and smaller
+
+## Setup the environment on an android virtual machine
+echo
+if [ -f $android_config ] ; then
+	echo "$p: Configuring android support from $android_config"
+	. $android_config
+else
+	echo "$p: non-android vm: $android_config not found"
+fi
+
+## Android can modify tool versions; delay this check
+
+## XXX must setup user repo before any build systems are run,
+## otherwise they will create their own directories
+
+export BUILD_DIR="${HOME}/build"
+export SWAMP_USER_REPO="${BUILD_DIR}/usr_lib_dir"
+
+echo $p: create build-repo $SWAMP_USER_REPO
+## used for both ANT (w/ IVY) and MAVEN
+mkdir -p ${SWAMP_USER_REPO}
+
+## MAP directories into the user repo
+echo $p: map build-sys dirs to build-repo
+for i in .ant .ivy2 .m2 .gradle ; do
+	t=$HOME/$i
+	if [ ! -e $t -o -L $t ] ; then
+		rm -f $t
+		d=$SWAMP_USER_REPO/$i
+		mkdir -p $d
+		ln -s -f $d $t
+		## these links are not removed so that interactive VM
+		## use will have the tools setup correctly for debugging.
+	else
+		echo $p: $t: exists as directory, USING USER VERSION
+	fi
+done
+unset i t d
+
+## this fixes most of the java tools and build systems to produce loggable
+## output instead of tty based output without version-specific options.
+## The others need to be dealt with individually.
+if [ -n "$TERM" ] ; then
+	export TERM=dumb
+fi
+
+
+echo
+echo $p:  java build system versions
+for i in ant mvn gradle ; do
+	echo ========== $i ==========
+	wi=`which $i 2>/dev/null`
+	if [ -n "$wi" ] ; then
+		echo $p: $i: found at $wi
+		$wi -version
+	else
+		echo $p: $i: not available in defaults
+	fi
+done
+unset i wi
+
+echo
+echo $p: setting environment variables ...
+export TOOL_DIR="${HOME}/tool"
+export RESULTS_DIR="${HOME}/results"
+export SCRIPTS_DIR=${HOME}/$(untar "${VMINPUTDIR}/scripts.tar.gz")
+#export SCRIPTS_DIR="${HOME}/scripts"
+export PYTHONPATH="${SCRIPTS_DIR}/lib:${PYTHONPATH}"
+
+echo == set variables ==
+printenv | egrep 'BUILD_DIR|TOOL_DIR|RESULTS_DIR|SWAMP_USER_REPO|SCRIPTS_DIR|PYTHON_PATH'
+echo ==
+
+
+echo
+set -x
+${SCRIPTS_DIR}/bin/java-assess --printVersion --printPlatform ${VMINPUTDIR} ${VMOUTPUTDIR} ${BUILD_DIR} ${TOOL_DIR} ${RESULTS_DIR}
