@@ -224,11 +224,6 @@ class SwaTool(metaclass=ABCMeta):
 
             for build_artifacts in self._get_build_artifacts(build_summary_obj, results_root_dir):
 
-                build_artifacts.update(self._tool_conf)
-                cmd = gencmd.gencmd(self._tool_conf['tool-invoke'], build_artifacts)
-
-                logging.info('ASSESSMENT COMMAND: %s', cmd)
-
                 if 'report-on-stdout' in self._tool_conf \
                    and self._tool_conf['report-on-stdout'] == 'true':
                     outfile = build_artifacts['assessment-report']
@@ -236,8 +231,20 @@ class SwaTool(metaclass=ABCMeta):
                     outfile = osp.join(results_root_dir,
                                        'swa_tool_stdout{0}.out'.format(build_artifacts['build-artifact-id']))
 
-                errfile = osp.join(results_root_dir,
-                                   'swa_tool_stderr{0}.out'.format(build_artifacts['build-artifact-id']))
+                if 'report-on-stderr' in self._tool_conf \
+                   and self._tool_conf['report-on-stderr'] == 'true':
+                    errfile = build_artifacts['assessment-report']
+                else:
+                    errfile = osp.join(results_root_dir,
+                                       'swa_tool_stderr{0}.out'.format(build_artifacts['build-artifact-id']))
+
+                self._tool_conf['swa-tool-stdout'] = outfile
+                self._tool_conf['swa-tool-stderr'] = errfile
+
+                build_artifacts.update(self._tool_conf)
+                cmd = gencmd.gencmd(self._tool_conf['tool-invoke'], build_artifacts)
+                logging.info('ASSESSMENT COMMAND: %s', cmd)
+
                 starttime = utillib.posix_epoch()
 
                 exit_code, environ = utillib.run_cmd(cmd,
@@ -272,6 +279,9 @@ class SwaTool(metaclass=ABCMeta):
 
                     if self._tool_conf['tool-type'] == 'error-prone':
                         self.error_msgs += SwaTool._read_err_msg(build_artifacts['assessment-report'],
+                                                                 self._tool_conf['tool-report-exit-code-msg'])
+                    elif self._tool_conf['tool-type'] == 'dependency-check':
+                        self.error_msgs += SwaTool._read_err_msg(outfile,
                                                                  self._tool_conf['tool-report-exit-code-msg'])
                     else:
                         self.error_msgs += SwaTool._read_err_msg(errfile,
@@ -655,10 +665,8 @@ class OwaspDependencyCheck(SwaTool):
                     self._tool_conf['db-password'] = services_conf['tool-dependency-check-db-client-password']
                 else:
                     self._tool_conf.pop('db-update-option')
-                    self._tool_conf.pop('db-driver-name')
             else: # fetch db locally
                     self._tool_conf.pop('db-update-option')
-                    self._tool_conf.pop('db-driver-name')
         
     def _get_build_artifacts(self, build_summary_obj, results_root_dir):
         '''yeilds dictionary objects that has all the information to run
