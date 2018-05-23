@@ -204,8 +204,8 @@ class SwaTool(metaclass=ABCMeta):
         if 'tool-licence-template' in self._tool_conf or \
            'tool-license-template' in self._tool_conf:
 
-            setting_file = osp.join(input_root_dir, 'services.conf')
-            setting_conf = confreader.read_conf_into_dict(setting_file)
+            services_file = osp.join(input_root_dir, 'services.conf')
+            services_conf = confreader.read_conf_into_dict(services_file)
 
             # spelling mistake, and this is to make it backwards compatible
             if 'tool-licence-template' in self._tool_conf:
@@ -215,13 +215,15 @@ class SwaTool(metaclass=ABCMeta):
             
             with open(license_template_file) as fobj:
                 license_blob = ''.join([s for s in fobj])
-                license_string = utillib.expandvar(license_blob, setting_conf)
+                license_string = utillib.expandvar(license_blob, services_conf)
                 license_file = osp.join(tool_root_dir, 'license')
 
                 with open(license_file, 'w') as fobj2:
                     fobj2.write(license_string)
                 self._tool_conf['tool-license'] = license_file
 
+            self._tool_conf.update(services_conf)
+                
     def _get_num_failed_assessments(self, exit_code_list):
         return sum([not self._validate_exit_code(exit_code)
                     for exit_code in exit_code_list])
@@ -302,7 +304,7 @@ class SwaTool(metaclass=ABCMeta):
                         self.error_msgs += SwaTool._read_err_msg(outfile,
                                                                  self._tool_conf['tool-report-exit-code-msg'])
                     elif self._tool_conf['tool-type'] == 'ps-jtest' and \
-                         self._tool_conf['tool-version'] in ['10.3.2']:
+                         self._tool_conf['tool-version'].startswith('10.3'):
                         self.error_msgs += SwaTool._read_err_msg(outfile,
                                                                  self._tool_conf['tool-report-exit-code-msg'])
                     else:
