@@ -48,6 +48,20 @@ public class TestCompileMojo extends AbstractSwampMojo {
      */
     private String buildMonitorOutputFile;
 
+    /**
+     * @parameter expression="${maven.compiler.testSource}" default-value="1.5"
+     * @required
+     * @readonly
+     */
+    private String testSource;
+
+    /**
+     * @parameter expression="${maven.compiler.testTarget}" default-value="1.5"
+     * @required
+     * @readonly
+     */
+    private String testTarget;
+
 	/**
 	 * @parameter default-value="${project}"
 	 * @required
@@ -132,7 +146,7 @@ public class TestCompileMojo extends AbstractSwampMojo {
 		return getPluginParameter("org.apache.maven.plugins:maven-compiler-plugin",
 				"testSource",
 				"maven.compiler.testSource",
-				"1.5");
+				testSource);
 	}
 
 	@Override
@@ -140,7 +154,7 @@ public class TestCompileMojo extends AbstractSwampMojo {
 		return getPluginParameter("org.apache.maven.plugins:maven-compiler-plugin",
 				"testTarget",
 				"maven.compiler.testTarget",
-				"1.5");
+				testTarget);
 	}
 
 	@Override

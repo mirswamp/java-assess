@@ -8,6 +8,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 import java.util.UUID;
 
 import org.apache.commons.io.FilenameUtils;
@@ -189,7 +190,8 @@ public abstract class AbstractSwampMojo extends AbstractMojo {
 		}			
 
 		if((plugin_param_str == null) && (plugin_param_property != null)) {
-			plugin_param_str = getProject().getProperties().getProperty(plugin_param_property,
+			Properties all_props = getProject().getProperties();
+			plugin_param_str = all_props.getProperty(plugin_param_property,
 					plugin_param_default_value);
 		}
 

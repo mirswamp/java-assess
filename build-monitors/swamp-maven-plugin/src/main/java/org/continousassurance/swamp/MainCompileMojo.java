@@ -49,6 +49,20 @@ public class MainCompileMojo extends AbstractSwampMojo {
      */
     private String buildMonitorOutputFile;
 
+    /**
+     * @parameter expression="${maven.compiler.source}" default-value="1.5"
+     * @required
+     * @readonly
+     */
+    private String source;
+
+    /**
+     * @parameter expression="${maven.compiler.target}" default-value="1.5"
+     * @required
+     * @readonly
+     */
+    private String target;
+
 	/**
 	 * @parameter default-value="${project}"
 	 * @required
@@ -131,7 +145,7 @@ public class MainCompileMojo extends AbstractSwampMojo {
 		return getPluginParameter("org.apache.maven.plugins:maven-compiler-plugin",
 				"source",
 				"maven.compiler.source",
-				"1.5");
+				source);
 	}
 
 	@Override
@@ -139,7 +153,7 @@ public class MainCompileMojo extends AbstractSwampMojo {
 		return getPluginParameter("org.apache.maven.plugins:maven-compiler-plugin",
 				"target",
 				"maven.compiler.target",
-				"1.5");
+				target);
 	}
 
 	@Override
