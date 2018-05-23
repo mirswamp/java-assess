@@ -131,6 +131,12 @@ class SwaTool(metaclass=ABCMeta):
         if 'tool-target-artifacts' not in self._tool_conf:
             self._tool_conf['tool-target-artifacts'] = 'java-compile'
 
+        #Set Max heap size to 2/3
+        if utillib.get_cpu_type() == 64:
+            self._tool_conf['max-heap'] = '-Xmx{0}M'.format(int(utillib.sys_mem_size() * 2 / 3))
+        elif utillib.get_cpu_type() == 32:
+            self._tool_conf['max-heap'] = '-Xmx1024M'
+
         logging.info('TOOL CONF: %s', self._tool_conf)
 
         # For Exit Status and Summary
@@ -236,8 +242,13 @@ class SwaTool(metaclass=ABCMeta):
                     outfile = osp.join(results_root_dir,
                                        'swa_tool_stdout{0}.out'.format(build_artifacts['build-artifact-id']))
 
-                errfile = osp.join(results_root_dir,
-                                   'swa_tool_stderr{0}.out'.format(build_artifacts['build-artifact-id']))
+                if 'report-on-stderr' in self._tool_conf \
+                   and self._tool_conf['report-on-stderr'] == 'true':
+                    errfile = build_artifacts['assessment-report']
+                else:
+                    errfile = osp.join(results_root_dir,
+                                       'swa_tool_stderr{0}.out'.format(build_artifacts['build-artifact-id']))
+
                 starttime = utillib.posix_epoch()
 
                 exit_code, environ = utillib.run_cmd(cmd,

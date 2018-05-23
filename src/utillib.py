@@ -9,8 +9,8 @@ import re
 import string
 import shlex
 import uuid
+import pkgutil
 import logging
-
 
 class PermissionException(OSError):
     pass
@@ -605,3 +605,12 @@ def sys_mem_size():
     else:
         return 4096
         
+
+def get_framework_version():
+    
+    version = pkgutil.get_data('version', 'version.txt')
+    if version:
+        return str(version, encoding='utf-8').strip('\n')
+    else:
+        return 'v.?.?.?'
+

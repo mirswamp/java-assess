@@ -101,7 +101,9 @@ class BuildSummary(metaclass=ABCMeta):
         BuildSummary._add(self._root, 'uuid', utillib.get_uuid())
         # TODO: BuildSummary._add(self._root, 'start-ts', )
         # TODO: BuildSummary._add(self._root, 'end-ts', )
-
+        BuildSummary._add(self._root, 'build-fw', 'java-assess')
+        BuildSummary._add(self._root, 'build-fw-version', utillib.get_framework_version())
+        
     def __enter__(self):
         return self
 
