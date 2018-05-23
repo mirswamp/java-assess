@@ -131,12 +131,6 @@ class SwaTool(metaclass=ABCMeta):
         if 'tool-target-artifacts' not in self._tool_conf:
             self._tool_conf['tool-target-artifacts'] = 'java-compile'
 
-        #Set Max heap size to 2/3
-        if utillib.get_cpu_type() == 64:
-            self._tool_conf['max-heap'] = '-Xmx{0}M'.format(int(utillib.sys_mem_size() * 2 / 3))
-        elif utillib.get_cpu_type() == 32:
-            self._tool_conf['max-heap'] = '-Xmx1024M'
-
         logging.info('TOOL CONF: %s', self._tool_conf)
 
         # For Exit Status and Summary
@@ -242,13 +236,8 @@ class SwaTool(metaclass=ABCMeta):
                     outfile = osp.join(results_root_dir,
                                        'swa_tool_stdout{0}.out'.format(build_artifacts['build-artifact-id']))
 
-                if 'report-on-stderr' in self._tool_conf \
-                   and self._tool_conf['report-on-stderr'] == 'true':
-                    errfile = build_artifacts['assessment-report']
-                else:
-                    errfile = osp.join(results_root_dir,
-                                       'swa_tool_stderr{0}.out'.format(build_artifacts['build-artifact-id']))
-
+                errfile = osp.join(results_root_dir,
+                                   'swa_tool_stderr{0}.out'.format(build_artifacts['build-artifact-id']))
                 starttime = utillib.posix_epoch()
 
                 exit_code, environ = utillib.run_cmd(cmd,
@@ -257,6 +246,8 @@ class SwaTool(metaclass=ABCMeta):
                                                      errfile=errfile,
                                                      infile=self._get_stdin(),
                                                      env=self._get_env())
+
+                exit_codes_list.append(exit_code)
 
                 build_artifacts['assessment-report'] = self._get_report(results_root_dir,
                                                                         build_artifacts['assessment-report'],
@@ -279,27 +270,12 @@ class SwaTool(metaclass=ABCMeta):
                    ('tool-report-exit-code' in self._tool_conf) and \
                    (exit_code == int(self._tool_conf['tool-report-exit-code'])):
 
-                    exit_codes_list.append(exit_code)
-
                     if self._tool_conf['tool-type'] == 'error-prone':
                         self.error_msgs += SwaTool._read_err_msg(build_artifacts['assessment-report'],
                                                                  self._tool_conf['tool-report-exit-code-msg'])
                     else:
                         self.error_msgs += SwaTool._read_err_msg(errfile,
                                                                  self._tool_conf['tool-report-exit-code-msg'])
-                elif self._tool_conf['tool-type'] == 'error-prone' and \
-                     self._tool_conf['tool-version'] not in ['2.0.15', '2.0.9', '1.1.1']:
-                    # error-prone 2.0.15 does not return different exit code for tool-pkg-incompatiblity
-                    error_msg = SwaTool._read_err_msg(build_artifacts['assessment-report'],
-                                                      self._tool_conf['tool-report-exit-code-msg'])
-
-                    if error_msg:
-                        self.error_msgs += error_msg
-                        # Differnet exit code
-                        exit_codes_list.append(int(self._tool_conf['tool-report-exit-code'])) 
-                    else:
-                        exit_codes_list.append(exit_code)
-
                 self._cleanup()
 
         self.passed = len(exit_codes_list) - self._get_num_failed_assessments(exit_codes_list)
@@ -464,36 +440,6 @@ class Jtest(SwaTool):
 
         return new_file_filters
 
-    # @classmethod
-    # def _modify_jtest_srcdirs_old(cls, build_artifacts, results_root_dir):
-
-    #     srcdirs = set()
-    #     include = set()
-
-    #     for _file in build_artifacts['srcfile']:
-
-    #         encoding = build_artifacts.get('encoding', BuildArtifacts.UTF_8)
-
-    #         try:
-    #             pkgname = directory_scanner.JavaParser.get_pkg_name(_file, encoding)
-
-    #             if pkgname is not None:
-    #                 pkgpath = pkgname.replace('.', '/')
-    #                 dirpath, _, filename = _file.rpartition(pkgpath + '/')
-    #                 srcdirs.add(osp.normpath(dirpath))
-    #                 include.add(pkgname + '.' + osp.splitext(filename)[0])
-    #             else:
-    #                 srcdirs.add(osp.normpath(osp.dirname(_file)))
-
-    #         except UnicodeDecodeError as err:
-    #             logging.error('UnicodeDecodeError: %s in the %s', str(err), _file)
-
-    #     build_artifacts['srcdir'] = list(srcdirs)
-    #     include_filters_file = osp.join(results_root_dir,
-    #                                     'include_filters{0}.lst'.format(build_artifacts['build-artifact-id']))
-    #     utillib.write_to_file(include_filters_file, list(include))
-    #     build_artifacts['include'] = include_filters_file
-
     @classmethod
     def _modify_jtest_srcdirs(cls, build_artifacts, results_root_dir):
 
@@ -582,23 +528,30 @@ class AppHealthCheck(SwaTool):
     def __init__(self, input_root_dir, tool_root_dir):
         SwaTool.__init__(self, input_root_dir, tool_root_dir)
         self._tool_conf['tool-target-artifacts'] = 'java-compile java-bytecode'
+        self.ahc_results_archive = None
+        self.ahc_results_file = None
+
+    def _install(self, input_root_dir, tool_root_dir):
+
+        with LogTaskStatus('tool-install'):
+
+            user_info_conf_file = osp.join(input_root_dir,
+                                           AppHealthCheck.USER_CONF_FILE)
+            if osp.isfile(user_info_conf_file):
+                user_info_conf = confreader.read_conf_into_dict(user_info_conf_file)
+                if AppHealthCheck.USER_CONF_KEYS.issubset(set(user_info_conf)):
+                    self._tool_conf.update(user_info_conf)
+                else:
+                    raise ToolInstallFailedError('Missing required tool options %s in the file: %s' %
+                                                 (AppHealthCheck.USER_CONF_KEYS.difference(set(user_info_conf)),
+                                                  AppHealthCheck.USER_CONF_FILE))
+            else:
+                raise ToolInstallFailedError('User info file (%s) not found' %
+                                             (AppHealthCheck.USER_CONF_FILE))
 
     def _get_build_artifacts(self, build_summary_obj, results_root_dir):
         '''yeilds dictionary objects that has all the information to run
         a swa tool'''
-
-        user_info_conf_file = osp.join(os.getenv('VMINPUTDIR'), AppHealthCheck.USER_CONF_FILE)
-        if osp.isfile(user_info_conf_file):
-            user_info_conf = confreader.read_conf_into_dict(user_info_conf_file)
-            if len(AppHealthCheck.USER_CONF_KEYS.difference(set(user_info_conf))) == 0:
-                self._tool_conf.update(user_info_conf)
-            else:
-                raise KeyError('Missing %s attributes in the file: %s' %
-                               (AppHealthCheck.USER_CONF_KEYS.difference(set(user_info_conf)),
-                                AppHealthCheck.USER_CONF_FILE))
-        else:
-            raise FileNotFoundException('User info file (%s) not found' %
-                                        (AppHealthCheck.USER_CONF_FILE))
 
         archives = set()
         new_build_artifacts = dict()
@@ -670,23 +623,43 @@ class OwaspDependencyCheck(SwaTool):
         SwaTool.__init__(self, input_root_dir, tool_root_dir)
         self._tool_conf['tool-target-artifacts'] = 'java-compile java-bytecode java-android-apk'
 
-        services_conf_file = osp.join(input_root_dir, 'services.conf')
-        if not osp.isfile(services_conf_file):
-            return
+    def _install(self, input_root_dir, tool_root_dir):
+
+        with LogTaskStatus('tool-install'):
+
+            run_conf = confreader.read_conf_into_dict(osp.join(input_root_dir,
+                                                               'run.conf'))
+            services_conf_file = osp.join(input_root_dir, 'services.conf')
+
+            if run_conf.get('internet-inaccessible', 'false') == 'true':
+                db_file = osp.join(tool_root_dir, self._tool_conf['tool-dir'], 'data', 'dc.h2.db')
+
+                if not osp.isfile(db_file):
+                    raise ToolInstallFailedError("Tool database file '{}' not found, this is required for 'internet-inaccessible' environments".format(osp.join(self._tool_conf['tool-dir'], 'data', 'dc.h2.db')))
+
+            elif osp.isfile(services_conf_file):
+
+                services_conf = confreader.read_conf_into_dict(services_conf_file)
+
+                all_odc_keys = {'tool-dependency-check-db-host',
+                                'tool-dependency-check-db-port',
+                                'tool-dependency-check-db-driver-name',
+                                'tool-dependency-check-db-user',
+                                'tool-dependency-check-db-password',
+                                'tool-dependency-check-db-location'}
+
+                if all_odc_keys.issubset(set(services_conf)):
+                    connection_string = 'jdbc:h2:tcp://<tool-dependency-check-db-host>:<tool-dependency-check-db-port>/<tool-dependency-check-db-location>'
+                    self._tool_conf['db-connection-string'] = utillib.expandvar(connection_string,
+                                                                                services_conf)
+                    self._tool_conf['db-driver-name'] = services_conf['tool-dependency-check-db-driver-name']
+                    self._tool_conf['db-user'] = services_conf['tool-dependency-check-db-user']
+                    self._tool_conf['db-password'] = services_conf['tool-dependency-check-db-password']
+                else:
+                    self._tool_conf.pop('db-update-option')
+            else: # fetch db locally
+                    self._tool_conf.pop('db-update-option')
         
-        services_conf = confreader.read_conf_into_dict(services_conf_file)
-
-        if 'tool-dependency-check-db-driver-name' in services_conf:
-            self._tool_conf['db-connection-string'] = utillib.expandvar('jdbc:h2:tcp://<tool-dependency-check-db-host>:<tool-dependency-check-db-port>//opt/swamp-base/h2/data/dc',
-                                                                        services_conf)
-            self._tool_conf['db-driver-name'] = services_conf['tool-dependency-check-db-driver-name']
-            self._tool_conf['db-user'] = services_conf['tool-dependency-check-db-user']
-            self._tool_conf['db-password'] = services_conf['tool-dependency-check-db-password']
-        else:
-            self._tool_conf['executable'] = osp.join(tool_root_dir,
-                                                     self._tool_conf['tool-dir'],
-                                                     'bin/dependency-check.sh')
-
     def _get_build_artifacts(self, build_summary_obj, results_root_dir):
         '''yeilds dictionary objects that has all the information to run
         a swa tool'''

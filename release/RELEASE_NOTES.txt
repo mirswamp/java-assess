@@ -1,4 +1,19 @@
 -----------------------------------
+java-assess version 2.5.8 (Tue Jul 25 08:17:32 CDT 2017)
+-----------------------------------
+- Handle different exit code for error-prone-2.0.21
+
+- framework version in build summary and assessment summary
+
+- Updated maven plugin
+
+- Fixed handling maven.compiler.source and maven.compile.testSource command line options
+
+- Refactored Maven plugin
+
+- Updated release notes
+
+-----------------------------------
 java-assess version 2.5.6 (Thu May 25 10:22:12 CDT 2017)
 -----------------------------------
 - Fixed Jtest bug with include file filters: If package name does not match with the directory structure
