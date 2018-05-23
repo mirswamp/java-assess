@@ -65,7 +65,8 @@ class AssessmentSummary:
 
     def add_report(self, build_artifact_id, cmd, exit_code,
                    environ, cwd, report, stdout,
-                   stderr, tool_type, starttime, endtime):
+                   stderr, tool_type, starttime, endtime,
+                   results_root_dir):
 
         #logging.info('ASSESS COMMAND: {0}'.format(' '.join(cmd)))
         logging.info('ASSESSMENT WORKING DIR: %s', cwd)
@@ -76,7 +77,7 @@ class AssessmentSummary:
         if build_artifact_id:
             AssessmentSummary._add(assess_elem, 'build-artifact-id', build_artifact_id)
         if osp.isfile(report):
-            AssessmentSummary._add(assess_elem, 'report', osp.basename(report))
+            AssessmentSummary._add(assess_elem, 'report', osp.relpath(report, results_root_dir))
         if osp.isfile(stdout):
             AssessmentSummary._add(assess_elem, 'stdout', osp.basename(stdout))
         if osp.isfile(stderr):

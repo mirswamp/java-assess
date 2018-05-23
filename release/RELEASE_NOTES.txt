@@ -1,4 +1,11 @@
 -----------------------------------
+java-assess version 2.6.6 (Thu Nov  9 15:29:12 CST 2017)
+-----------------------------------
+- Added support for Jtest10
+
+- Added support for Spotbugs
+
+-----------------------------------
 java-assess version 2.6.5 (Thu Aug 31 10:40:11 CDT 2017)
 -----------------------------------
 - Fixed a bug with status.out:assess (pass: 0, fail: 0)

@@ -7,6 +7,8 @@ import shutil
 import json
 from abc import ABCMeta
 import zipfile
+import copy
+import glob
 
 from ..logger import LogTaskStatus
 from .. import utillib
@@ -116,6 +118,7 @@ class SwaTool(metaclass=ABCMeta):
 
         self._unarchive(input_root_dir, tool_root_dir)
         self._install(input_root_dir, tool_root_dir)
+        self._install_license(input_root_dir, tool_root_dir)
 
         if not osp.isabs(self._tool_conf['executable']):
             if 'tool-dir' not in self._tool_conf:
@@ -192,23 +195,32 @@ class SwaTool(metaclass=ABCMeta):
 
                 if exit_code != 0:
                     raise ToolInstallFailedError("Install Tool Failed, "
-                                                 "Command '{0}' return {1}".format(install_cmd, exit_code))
+                                                 "Command '{0}' return {1}".format(install_cmd,
+                                                                                   exit_code))
 
-                if 'tool-licence-template' in self._tool_conf:
+    def _install_license(self, input_root_dir, tool_root_dir):
 
-                    setting_file = osp.join(input_root_dir, 'services.conf')
-                    setting_conf = confreader.read_conf_into_dict(setting_file)
+        # spelling mistake, and this is to make it backwards compatible
+        if 'tool-licence-template' in self._tool_conf or \
+           'tool-license-template' in self._tool_conf:
 
-                    license_template_file = utillib.expandvar(self._tool_conf['tool-licence-template'], None)
+            setting_file = osp.join(input_root_dir, 'services.conf')
+            setting_conf = confreader.read_conf_into_dict(setting_file)
 
-                    with open(license_template_file) as fobj:
-                        license_blob = ''.join([s for s in fobj])
-                        license_string = utillib.expandvar(license_blob, setting_conf)
-                        license_file = osp.join(tool_root_dir, 'license')
+            # spelling mistake, and this is to make it backwards compatible
+            if 'tool-licence-template' in self._tool_conf:
+                license_template_file = utillib.expandvar(self._tool_conf['tool-licence-template'], None)
+            else:
+                license_template_file = utillib.expandvar(self._tool_conf['tool-license-template'], None)
+            
+            with open(license_template_file) as fobj:
+                license_blob = ''.join([s for s in fobj])
+                license_string = utillib.expandvar(license_blob, setting_conf)
+                license_file = osp.join(tool_root_dir, 'license')
 
-                        with open(license_file, 'w') as fobj2:
-                            fobj2.write(license_string)
-                        self._tool_conf['tool-license'] = license_file
+                with open(license_file, 'w') as fobj2:
+                    fobj2.write(license_string)
+                self._tool_conf['tool-license'] = license_file
 
     def _get_num_failed_assessments(self, exit_code_list):
         return sum([not self._validate_exit_code(exit_code)
@@ -268,14 +280,14 @@ class SwaTool(metaclass=ABCMeta):
                                               cmd,
                                               exit_code,
                                               environ,
-                                              #results_root_dir,
                                               build_summary_obj.get_pkg_dir(),
                                               build_artifacts['assessment-report'],
                                               outfile,
                                               errfile,
                                               self._tool_conf['tool-type'],
                                               starttime,
-                                              utillib.posix_epoch())
+                                              utillib.posix_epoch(),
+                                              results_root_dir)
 
                 if not self._validate_exit_code(exit_code) and \
                    ('tool-report-exit-code' in self._tool_conf) and \
@@ -287,6 +299,10 @@ class SwaTool(metaclass=ABCMeta):
                         self.error_msgs += SwaTool._read_err_msg(build_artifacts['assessment-report'],
                                                                  self._tool_conf['tool-report-exit-code-msg'])
                     elif self._tool_conf['tool-type'] == 'dependency-check':
+                        self.error_msgs += SwaTool._read_err_msg(outfile,
+                                                                 self._tool_conf['tool-report-exit-code-msg'])
+                    elif self._tool_conf['tool-type'] == 'ps-jtest' and \
+                         self._tool_conf['tool-version'] in ['10.3.2']:
                         self.error_msgs += SwaTool._read_err_msg(outfile,
                                                                  self._tool_conf['tool-report-exit-code-msg'])
                     else:
@@ -729,6 +745,120 @@ class OwaspDependencyCheck(SwaTool):
             raise JavaBuildArtifactsError("No package dependencies (.jar files) or .apk files found for analysis.")
 
 
+class Jtest10(SwaTool):
+
+    DATA_JSON_TEMPLATE = {
+              "name": "",
+              "location": "",
+              "type": "classpath_project",
+              "build_id": "10.3.2.20170508-20170519-0926",
+              "schema_version": "1.1",
+              "testoutcomes": [
+                  {
+                      "type": "junit",
+                      "files": []
+                  }
+              ],
+              "compilations": [
+                  {
+                      "id": "defaultCompile",
+                      "sourcepath": [],
+                      "includes": [],
+                      "excludes": [],
+                      "tests": [],
+                      "binarypath": [],
+                      "classpath": [],
+                      "bootpath": [],
+                      "encoding": "utf-8",
+                      #"sourcelevel": "",
+                  }
+              ]
+        }
+
+    def __init__(self, input_root_dir, tool_root_dir):
+        SwaTool.__init__(self, input_root_dir, tool_root_dir)
+
+    ''' Jtest10 requires jar files in JAVA_HOME/jar'''
+    def _get_java_home_jars(self):
+        
+        if 'JAVA_HOME' in os.environ:
+            return glob.glob(osp.join(os.environ['JAVA_HOME'],
+                                      'jre/lib/*.jar'))
+            
+        return list()
+    
+    def _get_build_artifacts(self, build_summary_obj, results_root_dir):
+
+        for build_artifacts in \
+                build_summary_obj.get_build_artifacts(*self._tool_conf['tool-target-artifacts'].split()):
+
+            data_json = copy.deepcopy(Jtest10.DATA_JSON_TEMPLATE)
+            data_json['name'] = osp.basename(build_summary_obj.get_pkg_dir())
+            data_json['location'] = build_summary_obj.get_pkg_dir()
+            data_json['compilations'][0]['bootpath'] = self._get_java_home_jars()
+            
+            if 'srcdir' in build_artifacts:
+                data_json['compilations'][0]['sourcepath'] = build_artifacts['srcdir']
+
+            if 'sourcepath' in build_artifacts:
+                data_json['compilations'][0]['sourcepath'].extend(build_artifacts['sourcepath'])
+            
+            # if 'include' in build_artifacts:
+            #    data_json['compilations'][0]['includes'] = build_artifacts['include']
+            
+            # if 'exclude' in build_artifacts:
+            #    data_json['compilations'][0]['excludes'] = build_artifacts['exclude']
+            
+            if 'auxclasspath' in build_artifacts:
+                data_json['compilations'][0]['classpath'] = build_artifacts['auxclasspath']
+            
+            if 'bootclasspath' in build_artifacts:
+                data_json['compilations'][0]['bootpath'].extend(build_artifacts['bootclasspath'])
+            
+            if 'encoding' in build_artifacts:
+                data_json['compilations'][0]['encoding'] = build_artifacts['encoding']
+            
+            if 'source' in build_artifacts:
+                data_json['compilations'][0]['sourcelevel'] = build_artifacts['source']
+
+            data_json_file = osp.join(results_root_dir,
+                                      '{0}.data.json'.format(build_artifacts['build-artifact-id']))
+            with open(data_json_file, 'w') as fp:
+                json.dump(data_json, fp)
+
+            src_file_list_file = osp.join(results_root_dir,
+                                          'files{0}.lst'.format(build_artifacts['build-artifact-id']))
+            with open(src_file_list_file, 'w') as fp:
+                fp.writelines(['{0}\n'.format(osp.relpath(_file,
+                                                          osp.dirname(data_json['location'])))
+                              for _file in build_artifacts['srcfile']])
+
+            new_build_artifacts = dict()
+            new_build_artifacts['build-artifact-id'] = build_artifacts['build-artifact-id']
+            new_build_artifacts['data-json-file'] = data_json_file
+            new_build_artifacts['src-file-lst'] = src_file_list_file
+            new_build_artifacts['results-root-dir'] = results_root_dir
+            #new_build_artifacts['assessment-report'] = osp.join(results_root_dir,
+            #                                               self._tool_conf['assessment-report-template'].format(build_artifacts['build-artifact-id']))
+            new_build_artifacts['results-dir'] = osp.join(results_root_dir,
+                                                          'report{0}'.format(build_artifacts['build-artifact-id']))
+
+            new_build_artifacts['assessment-report'] = osp.join(new_build_artifacts['results-dir'],
+                                                                'report.xml')
+
+            yield new_build_artifacts
+
+    def _get_report0(self, results_root_dir, report, outfile):
+        '''Report passed as an argument is old report path
+        This method has to be overridden for AppHealthCheck
+        Arguments: results_root_dir, report, outfile
+        '''
+        if osp.isfile(osp.join(results_root_dir, 'report.xml')):
+            shutil.move(osp.join(results_root_dir, 'report.xml'), report)
+
+        return report
+
+
 def assess(input_root_dir,
            output_root_dir,
            tool_root_dir,
@@ -740,10 +870,14 @@ def assess(input_root_dir,
 
     swatool = None
 
-    if tool_conf['tool-type'] == 'findbugs':
+    if tool_conf['tool-type'] in ['findbugs', 'spotbugs']:
         swatool = Findbugs(input_root_dir, tool_root_dir)
     elif tool_conf['tool-type'] == 'ps-jtest':
-        swatool = Jtest(input_root_dir, tool_root_dir)
+        if tool_conf['tool-version'].startswith('10'):
+            swatool = Jtest10(input_root_dir, tool_root_dir)
+        else:
+            swatool = Jtest(input_root_dir, tool_root_dir)
+
     elif tool_conf['tool-type'] == 'error-prone':
         swatool = Errorprone(input_root_dir, tool_root_dir)
     elif tool_conf['tool-type'] == 'lizard':

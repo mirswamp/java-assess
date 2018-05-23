@@ -212,8 +212,8 @@ def string_substitute_old(string_template, kwargs):
 
     return StringTemplate(string_template).safe_substitute(kwargs)
 
-PARAM_REGEX = re.compile(r'<(?P<name>[a-zA-Z][a-zA-Z_-]*)(?:[%](?P<sep>[^>]+))?>')
-
+#PARAM_REGEX = re.compile(r'<(?P<name>[a-zA-Z][a-zA-Z_-]*)(?:[%](?P<sep>[^>]+))?>')
+PARAM_REGEX = re.compile(r'<(?P<name>[a-zA-Z][a-zA-Z0-9]*([_-][a-zA-Z0-9]+)*)(?:[%](?P<sep>[^>]+))?>')
 
 def string_substitute(string_template, symbol_table):
     '''Substitues environment variables and

@@ -86,7 +86,7 @@ class JavaBuildArtifacts:
         self._build_artifacts = root.find('build-artifacts')
         self._package_conf = {elem.tag: elem.text for elem in root.find('package-conf')}
 
-    def _get_pkg_name_version(self):
+    def get_pkg_name_version(self):
         return '%s-%s' % (self._package_conf.get('package-short-name', ''),
                           self._package_conf.get('package-version'))
 
@@ -136,7 +136,7 @@ class JavaBuildArtifacts:
                     build_artifacts = AndroidApkArtifact(self._build_summary['build-root-dir'], elem).artifacts
 
                 build_artifacts['build-artifact-id'] = build_artifacts['id']
-                build_artifacts['package-name-version'] = self._get_pkg_name_version()
+                build_artifacts['package-name-version'] = self.get_pkg_name_version()
                 yield build_artifacts
 
 

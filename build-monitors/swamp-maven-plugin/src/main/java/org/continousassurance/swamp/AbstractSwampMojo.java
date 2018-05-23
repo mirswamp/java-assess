@@ -192,7 +192,7 @@ public abstract class AbstractSwampMojo extends AbstractMojo {
 		if((plugin_param_str == null) && (plugin_param_property != null)) {
 			Properties all_props = getProject().getProperties();
 			plugin_param_str = all_props.getProperty(plugin_param_property,
-					plugin_param_default_value);
+								 plugin_param_default_value);
 		}
 
 		return plugin_param_str;
