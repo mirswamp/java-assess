@@ -1,4 +1,11 @@
 -----------------------------------
+java-assess version 2.6.1 (Fri Aug  4 15:23:12 CDT 2017)
+-----------------------------------
+- Fixed ODC issues
+
+- Updated RELEASE NOTES
+
+-----------------------------------
 java-assess version 2.6.0 (Tue Aug  1 14:35:43 CDT 2017)
 -----------------------------------
 - Added error handling for OWASP Depedency Check
