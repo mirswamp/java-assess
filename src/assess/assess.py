@@ -643,22 +643,22 @@ class OwaspDependencyCheck(SwaTool):
 
                 all_odc_keys = {'tool-dependency-check-db-host',
                                 'tool-dependency-check-db-port',
-                                'tool-dependency-check-db-driver-name',
-                                'tool-dependency-check-db-user',
-                                'tool-dependency-check-db-password',
-                                'tool-dependency-check-db-location'}
+                                'tool-dependency-check-db-client-name',
+                                'tool-dependency-check-db-client-password',
+                                'tool-dependency-check-db-path'}
 
                 if all_odc_keys.issubset(set(services_conf)):
-                    connection_string = 'jdbc:h2:tcp://<tool-dependency-check-db-host>:<tool-dependency-check-db-port>/<tool-dependency-check-db-location>'
+                    connection_string = 'jdbc:h2:tcp://<tool-dependency-check-db-host>:<tool-dependency-check-db-port>/<tool-dependency-check-db-path>'
                     self._tool_conf['db-connection-string'] = utillib.expandvar(connection_string,
                                                                                 services_conf)
-                    self._tool_conf['db-driver-name'] = services_conf['tool-dependency-check-db-driver-name']
-                    self._tool_conf['db-user'] = services_conf['tool-dependency-check-db-user']
-                    self._tool_conf['db-password'] = services_conf['tool-dependency-check-db-password']
+                    self._tool_conf['db-user'] = services_conf['tool-dependency-check-db-client-name']
+                    self._tool_conf['db-password'] = services_conf['tool-dependency-check-db-client-password']
                 else:
                     self._tool_conf.pop('db-update-option')
+                    self._tool_conf.pop('db-driver-name')
             else: # fetch db locally
                     self._tool_conf.pop('db-update-option')
+                    self._tool_conf.pop('db-driver-name')
         
     def _get_build_artifacts(self, build_summary_obj, results_root_dir):
         '''yeilds dictionary objects that has all the information to run
