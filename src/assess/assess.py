@@ -294,7 +294,7 @@ class SwaTool(metaclass=ABCMeta):
                                                                  self._tool_conf['tool-report-exit-code-msg'])
                 elif self._tool_conf['tool-type'] == 'error-prone' and \
                      self._tool_conf['tool-version'] not in ['2.0.15', '2.0.9', '1.1.1']:
-                    # error-prone 2.0.15 does not return different exit code for tool-pkg-incompatiblity
+                    # error-prone 2.0.21 does not return different exit code for tool-pkg-incompatiblity
                     error_msg = SwaTool._read_err_msg(build_artifacts['assessment-report'],
                                                       self._tool_conf['tool-report-exit-code-msg'])
 
@@ -304,11 +304,13 @@ class SwaTool(metaclass=ABCMeta):
                         exit_codes_list.append(int(self._tool_conf['tool-report-exit-code']))
                     else:
                         exit_codes_list.append(exit_code)
+                else:
+                    exit_codes_list.append(exit_code)
 
                 self._cleanup()
 
-        self.passed = len(exit_codes_list) - self._get_num_failed_assessments(exit_codes_list)
         self.failed = self._get_num_failed_assessments(exit_codes_list)
+        self.passed = len(exit_codes_list) - self.failed
     
     def post_assess(self, results_root_dir):
         pass

@@ -1,4 +1,11 @@
 -----------------------------------
+java-assess version 2.6.5 (Thu Aug 31 10:40:11 CDT 2017)
+-----------------------------------
+- Fixed a bug with status.out:assess (pass: 0, fail: 0)
+
+- Updated RELEASE NOTES
+
+-----------------------------------
 java-assess version 2.6.4 (Wed Aug  9 15:28:09 CDT 2017)
 -----------------------------------
 - Fixed dependency check backwards compatibility
