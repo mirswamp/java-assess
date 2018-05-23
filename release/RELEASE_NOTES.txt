@@ -1,4 +1,11 @@
 -----------------------------------
+java-assess version 2.6.2 (Tue Aug  8 11:25:35 CDT 2017)
+-----------------------------------
+- Added error handling code for dependency check
+
+- Updated RELEASE NOTES
+
+-----------------------------------
 java-assess version 2.6.1 (Fri Aug  4 15:23:12 CDT 2017)
 -----------------------------------
 - Fixed ODC issues
