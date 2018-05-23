@@ -131,6 +131,12 @@ class SwaTool(metaclass=ABCMeta):
         if 'tool-target-artifacts' not in self._tool_conf:
             self._tool_conf['tool-target-artifacts'] = 'java-compile'
 
+        #Set Max heap size to 2/3
+        if utillib.get_cpu_type() == 64:
+            self._tool_conf['max-heap'] = '-Xmx{0}M'.format(int(utillib.sys_mem_size() * 2 / 3))
+        elif utillib.get_cpu_type() == 32:
+            self._tool_conf['max-heap'] = '-Xmx1024M'
+
         logging.info('TOOL CONF: %s', self._tool_conf)
 
         # For Exit Status and Summary
@@ -254,8 +260,6 @@ class SwaTool(metaclass=ABCMeta):
                                                      infile=self._get_stdin(),
                                                      env=self._get_env())
 
-                exit_codes_list.append(exit_code)
-
                 build_artifacts['assessment-report'] = self._get_report(results_root_dir,
                                                                         build_artifacts['assessment-report'],
                                                                         outfile)
@@ -277,6 +281,8 @@ class SwaTool(metaclass=ABCMeta):
                    ('tool-report-exit-code' in self._tool_conf) and \
                    (exit_code == int(self._tool_conf['tool-report-exit-code'])):
 
+                    exit_codes_list.append(exit_code)
+
                     if self._tool_conf['tool-type'] == 'error-prone':
                         self.error_msgs += SwaTool._read_err_msg(build_artifacts['assessment-report'],
                                                                  self._tool_conf['tool-report-exit-code-msg'])
@@ -286,6 +292,19 @@ class SwaTool(metaclass=ABCMeta):
                     else:
                         self.error_msgs += SwaTool._read_err_msg(errfile,
                                                                  self._tool_conf['tool-report-exit-code-msg'])
+                elif self._tool_conf['tool-type'] == 'error-prone' and \
+                     self._tool_conf['tool-version'] not in ['2.0.15', '2.0.9', '1.1.1']:
+                    # error-prone 2.0.15 does not return different exit code for tool-pkg-incompatiblity
+                    error_msg = SwaTool._read_err_msg(build_artifacts['assessment-report'],
+                                                      self._tool_conf['tool-report-exit-code-msg'])
+
+                    if error_msg:
+                        self.error_msgs += error_msg
+                        # Differnet exit code
+                        exit_codes_list.append(int(self._tool_conf['tool-report-exit-code']))
+                    else:
+                        exit_codes_list.append(exit_code)
+
                 self._cleanup()
 
         self.passed = len(exit_codes_list) - self._get_num_failed_assessments(exit_codes_list)
@@ -664,9 +683,11 @@ class OwaspDependencyCheck(SwaTool):
                     self._tool_conf['db-user'] = services_conf['tool-dependency-check-db-client-name']
                     self._tool_conf['db-password'] = services_conf['tool-dependency-check-db-client-password']
                 else:
-                    self._tool_conf.pop('db-update-option')
+                    if 'db-update-option' in self._tool_conf:
+                        self._tool_conf.pop('db-update-option')
             else: # fetch db locally
-                    self._tool_conf.pop('db-update-option')
+                    if 'db-update-option' in self._tool_conf:
+                        self._tool_conf.pop('db-update-option')
         
     def _get_build_artifacts(self, build_summary_obj, results_root_dir):
         '''yeilds dictionary objects that has all the information to run
