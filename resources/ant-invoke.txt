@@ -1,4 +1,5 @@
 <executable> 
+	-Dhttps.protocols=TLSv1.2
 	-buildfile <build-file>
 	-lib <build-monitor-lib>
 	-listener <build-monitor-class>

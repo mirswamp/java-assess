@@ -1,4 +1,5 @@
 <executable>
+	-Dhttps.protocols=TLSv1.2
 	--batch-mode
 	--file <build-file>
 	-s <maven-settings-xml-file>

@@ -1,4 +1,5 @@
 <executable>
+	-Dhttps.protocols=TLSv1.2
 	--no-daemon
 	--rerun-tasks
 	-Dorg.gradle.project.SwampListenerOutfile=<build-monitor-output-file>
