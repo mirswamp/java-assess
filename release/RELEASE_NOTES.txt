@@ -1,4 +1,11 @@
 -----------------------------------
+java-assess version 2.6.8 (Wed Jun 27 11:50:37 CDT 2018)
+-----------------------------------
+- Added -Dhttps.protocols=TLSv1.2 to build commands to fix failures caused by maven central depricating TLSv1.1
+
+- Updated gradle to 4.8.1, as gradle does not care about the https.protocols=TLSv1.2 property
+
+-----------------------------------
 java-assess version 2.6.7 (Thu Jan 18 15:32:34 CST 2018)
 -----------------------------------
 - Fixed Jtest license error handling problem with 10.3.3
