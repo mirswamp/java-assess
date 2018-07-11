@@ -573,7 +573,11 @@ class JavaMavenPkg(JavaSrcPkg):
 
         # Install swamp-maven-plugin
         install_cmd = [
-            'mvn', '-Dhttps.protocols=TLSv1.2', '--batch-mode', '-DskipTests', '--quiet',
+            'mvn',
+            '-Dhttps.protocols=TLSv1.2',
+            '--batch-mode',
+            '-DskipTests',
+            '--quiet',
             #'-s', self._build_conf['maven-settings-xml-file'],
             'install'
         ]
