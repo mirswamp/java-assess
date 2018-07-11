@@ -367,6 +367,20 @@ def setup_java_home(java_versions):
         'scientific-6.9-64': 'rh-like',
         'scientific-6.9-32': 'rh-like',
 
+        'rhel-6.10-64': 'rh-like',
+        'rhel-6.10-32': 'rh-like',
+        'centos-6.10-64': 'rh-like',
+        'centos-6.10-32': 'rh-like',
+        'scientific-6.10-64': 'rh-like',
+        'scientific-6.10-32': 'rh-like',
+
+        'rhel-6.11-64': 'rh-like',
+        'rhel-6.11-32': 'rh-like',
+        'centos-6.11-64': 'rh-like',
+        'centos-6.11-32': 'rh-like',
+        'scientific-6.11-64': 'rh-like',
+        'scientific-6.11-32': 'rh-like',
+
         'rhel-7.1-64': 'rh-like',
         'centos-7.1-64': 'rh-like',
         'scientific-7.1-64': 'rh-like',
@@ -379,8 +393,9 @@ def setup_java_home(java_versions):
         'centos-7.3-64': 'rh-like',
         'scientific-7.3-64': 'rh-like',
 
-        'rhel-7.4-64': 'rh-like',
         'centos-7.4-64': 'rh-like',
+        'centos-7.4-32': 'rh-like',
+        'rhel-7.4-64': 'rh-like',
         'scientific-7.4-64': 'rh-like',
 
         'centos-5.11-64': 'rh-like',
@@ -416,6 +431,7 @@ def setup_java_home(java_versions):
         'fedora-24-64': 'rh8-like',
         'fedora-25-64': 'rh8-like',
         'fedora-26-64': 'rh8-like',
+        'fedora-27-64': 'rh8-like',
 
         'fedora-17-32': 'r7-like',
         'fedora-18-32': 'rh-like',
@@ -427,6 +443,7 @@ def setup_java_home(java_versions):
         'fedora-24-32': 'rh8-like',
         'fedora-25-32': 'rh8-like',
         'fedora-26-32': 'rh8-like',
+        'fedora-27-32': 'rh8-like',
 
         # only works for 64 bit java on these platforms; need db-32-like OTW
         # java 8 isn't supporeted on debian-7 at this time
@@ -439,6 +456,7 @@ def setup_java_home(java_versions):
         'debian-7.13-64': 'deb-64-like',
         'debian-7.14-64': 'deb-64-like',
 
+        ## debian 8 now supports java8 via backports
         'debian-8.0-64': 'deb-64-like',
         'debian-8.1-64': 'deb-64-like',
         'debian-8.2-64': 'deb-64-like',
@@ -448,35 +466,63 @@ def setup_java_home(java_versions):
         'debian-8.6-64': 'deb-64-like',
         'debian-8.7-64': 'deb-64-like',
         'debian-8.8-64': 'deb-64-like',
+        'debian-8.9-64': 'deb-64-like',
+        'debian-8.10-64': 'deb-64-like',
+        'debian-8.11-64': 'deb-64-like',
+        'debian-8.12-64': 'deb-64-like',
+
+        ## haven't looked at it yet, but ... at least its a check-seats tryout
+        'debian-9.0-64': 'deb-64-like',
+        'debian-9.1-64': 'deb-64-like',
+        'debian-9.2-64': 'deb-64-like',
+        'debian-9.3-64': 'deb-64-like',
+        'debian-9.4-64': 'deb-64-like',
+        'debian-9.5-64': 'deb-64-like',
+        'debian-9.6-64': 'deb-64-like',
+        'debian-9.7-64': 'deb-64-like',
+        'debian-9.9-64': 'deb-64-like',
+        'debian-9.10-64': 'deb-64-like',
+        'debian-9.11-64': 'deb-64-like',
+        'debian-9.12-64': 'deb-64-like',
 
         'ubuntu-10.04-64': 'deb7-64-like',
         'ubuntu-12.04-64': 'deb-64-like',
         'ubuntu-12.04.2-64': 'deb-64-like',
         'ubuntu-12.04.5-64': 'deb-64-like',
+        'ubuntu-12.04.6-64': 'deb-64-like',
+        'ubuntu-12.04.7-64': 'deb-64-like',
         'ubuntu-14.04-64': 'deb-64-like',
         'ubuntu-16.04-64': 'deb-64-like',
+        'ubuntu-18.04-64': 'deb-64-like',
 
         'android-ubuntu-10.04-64': 'deb7-64-like',
         'android-ubuntu-12.04-64': 'deb-64-like',
         'android-ubuntu-12.04.2-64': 'deb-64-like',
         'android-ubuntu-12.04.5-64': 'deb-64-like',
+        'android-ubuntu-12.04.6-64': 'deb-64-like',
+        'android-ubuntu-12.04.7-64': 'deb-64-like',
         'android-ubuntu-14.04-64': 'deb-64-like',
         'android-ubuntu-16.04-64': 'deb-64-like',
+        'android-ubuntu-18.04-64': 'deb-64-like',
 
         'ubuntu-10.04-32': 'deb7-32-like',
         'ubuntu-12.04-32': 'deb-32-like',
         'ubuntu-14.04-32': 'deb-32-like',
         'ubuntu-16.04-32': 'deb-32-like',
+        'ubuntu-18.04-32': 'deb-32-like',
 
         'android-ubuntu-10.04-32': 'deb7-32-like',
         'android-ubuntu-12.04-32': 'deb-32-like',
         'android-ubuntu-14.04-32': 'deb-32-like',
         'android-ubuntu-16.04-32': 'deb-32-like',
+        'android-ubuntu-18.04-32': 'deb-32-like',
     }
     if plat_name not in os_family:
         raise Exception("No configuration to set JAVA_HOME on %s", plat_name)
 
     # XXX on rh, we are actually using openjdk .. but not specifying it
+    ## XXX if 'default' was re-looked-up as another entry, this would
+    ## really do a nice job of having to copy data here.
     rh7_java = {
         'java-6':   '/usr/lib/jvm/java-1.6.0',
         'java-7':   '/usr/lib/jvm/java-1.7.0',
@@ -594,6 +640,16 @@ def ordered_list(_list):
 
     return new_list
 
+
+## XXX this has a problem.   On a 32 bit system, the most memory available
+## to an assessment process to use is 4 GB.   Memory beyond 4GB
+## is not considered usable on that system, due to process limitiations.
+## So, we need to cap memory at 4GB on those systems.
+## XXX however, the calculations for java memory use on a 32-bit machine
+## with > 32 bit address lines and PAE, would allow use to use all 4GB
+## of memory for that one process, still leaving plenty for the system.
+## XXX This is taken care of by build_java to limit this correctly on 
+## 32 bit platforms.
 
 def sys_mem_size():
     'Returns memory in Mega bytes'
