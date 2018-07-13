@@ -3,9 +3,25 @@
 p=`basename $0`
 
 ## which versions of these are selected as default
-ant_version=1.9.9
-maven_version=3.3.9
-gradle_version=4.8.1
+## Please leave the comments & code here for reference.
+if false ; then
+	## these versions were used until june / july 2018,
+	## at which time gradle needed to be updated due to g-2 series
+	## not following TLS selection.  gradle-3 in android did, so it
+	## worked anyyay.
+	ant_version=1.9.9
+	maven_version=3.3.9
+	gradle_version=2.14.1		## Used upon til 2018 TLS problem g3 
+else
+	## OK, we are upgrading everything to current (and stable) build
+	## systems instead of staying in the dark ages.
+	ant_version=1.9.12
+	maven_version=3.5.4
+	gradle_version=4.8.1
+
+	## If this breaks things, 3.3.9 is still on the VMs,
+	## and we can use maven-version to make it work.
+fi
 
 opt_swamp="/opt/swamp"
 android_config="${opt_swamp}/android/config.sh"
@@ -353,7 +369,8 @@ for i in ant mvn gradle ; do
 	wi=`which $i 2>/dev/null`
 	if [ -n "$wi" ] ; then
 		echo $p: $i: found at $wi
-		$wi -version
+		## the '| cat' forces textual instead of graphical output
+		$wi -version | cat
 	else
 		echo $p: $i: not available in defaults
 	fi
