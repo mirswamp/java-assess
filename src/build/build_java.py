@@ -573,7 +573,11 @@ class JavaMavenPkg(JavaSrcPkg):
 
         # Install swamp-maven-plugin
         install_cmd = [
-            'mvn', '-Dhttps.protocols=TLSv1.2', '--batch-mode', '-DskipTests', '--quiet',
+            'mvn',
+            '-Dhttps.protocols=TLSv1.2',
+            '--batch-mode',
+            '-DskipTests',
+            '--quiet',
             #'-s', self._build_conf['maven-settings-xml-file'],
             'install'
         ]
@@ -779,23 +783,33 @@ class JavaGradlePkg(JavaSrcPkg):
 
         # if GRADLE_HOME is already set, the caller setup the
         # environment -- leave it alone.
-        if 'GRADLE_HOME' in new_env:
-            return new_env
+        if 'GRADLE_HOME' not in new_env:
+            ## We used to exit early here, now we just do this if it already
+            ## isn't setup so we can pass options below
+            ## XXX this is still wrong, if gradle is native.
 
-        # XXX  Only modify the environment if gradle is
-        # included w/ java-assess;
-        # Perhaps log a message if it wasn't and
-        # and it isn't provided by the environment either
-        # HOWEVER, a system-wide gradle install may/will exist,
-        # so it is NOT an error, just a notice
+            # XXX  Only modify the environment if gradle is
+            # included w/ java-assess;
+            # Perhaps log a message if it wasn't and
+            # and it isn't provided by the environment either
+            # HOWEVER, a system-wide gradle install may/will exist,
+            # so it is NOT an error, just a notice
 
-        gradle_home = osp.join(new_env['SCRIPTS_DIR'], 'build-sys/gradle')
-        if not os.path.isdir(gradle_home):
-            return new_env
+            gradle_home = osp.join(new_env['SCRIPTS_DIR'], 'build-sys/gradle')
+            if not os.path.isdir(gradle_home):
+                return new_env
 
-        new_env['GRADLE_HOME'] = gradle_home
-        new_env['PATH'] = '{0}:{1}'.format(osp.join(gradle_home, 'bin'),
-                                           new_env['PATH'])
+            new_env['GRADLE_HOME'] = gradle_home
+            new_env['PATH'] = '{0}:{1}'.format(osp.join(gradle_home, 'bin'),
+                                               new_env['PATH'])
+
+        ## fix for maven central issues .. can't pass via command line
+        maven_central_env = "-Dhttps.protocols=TLSv1.2"
+
+        ## For the other build systems, this is passed on the command
+        ## line.  However, for gradle, must use GRADLE_OPTS
+        new_env['GRADLE_OPTS'] = maven_central_env
+
         return new_env
 
     def _get_dependency_resolution_errors(self,
