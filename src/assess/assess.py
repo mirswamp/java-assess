@@ -41,6 +41,16 @@ class SwaTool(metaclass=ABCMeta):
     TOOL_DOT_CONF = 'tool.conf'
 
     @classmethod
+    def get_services_conf(cls, tool_type, input_root_dir):
+
+        conf_file = osp.join(input_root_dir, 'services.conf')
+        if osp.isfile(conf_file):
+            services_conf = confreader.read_conf_into_dict(conf_file)
+            return {key: services_conf[key] for key in services_conf.keys() if key.startswith('tool' + tool_type)}
+        else:
+            return dict()
+
+    @classmethod
     def _get_tool_conf(cls, input_root_dir):
 
         tool_conf_file = osp.join(input_root_dir, cls.TOOL_DOT_CONF)
@@ -59,6 +69,9 @@ class SwaTool(metaclass=ABCMeta):
 
         updated_conf = confreader.read_conf_into_dict(default_conf_file)
         updated_conf.update(tool_conf)
+
+        updated_conf.update(SwaTool.get_services_conf(updated_conf['tool-type'], input_root_dir))
+
         updated_conf = {key: utillib.expandvar(updated_conf[key], updated_conf)
                         for key in updated_conf}
         return updated_conf
