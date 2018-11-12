@@ -9,39 +9,39 @@ make_tarball=true
 make_cksum=true
 
 while [ $# -gt 0 ] ; do
-    case $1 in
+	case $1 in
 	--no-tar)
-	    make_tarball=false
-	    ;;
+		make_tarball=false
+		;;
 	--no-ck)
-	    make_cksum=false
-	    ;;
+		make_cksum=false
+		;;
 	--test)
-	    make_tarball=false
-	    make_cksum=false
-	    ;;
+		make_tarball=false
+		make_cksum=false
+		;;
 	-*)
-	    echo $p: $1: unkown optarg 1>&2
-	    exit 1
-	    ;;
+		echo $p: $1: unkown optarg 1>&2
+		exit 1
+		;;
 	*)
-	    break
-	    ;;
-    esac
-    shift
+		break
+		;;
+	esac
+	shift
 done
 
 if [ $# -lt 1  -o  $# -gt 2 ] ; then
-    echo usage: $p dest-dir '[version]' 1>&2
-    exit 1
+	echo usage: $p dest-dir '[version]' 1>&2
+	exit 1
 fi
 
 p_swamp=/p/swamp
 
 ## hack for vamshi's laptop environment
 if [ ! -d $p_swamp ] ; then
-    p_swamp=$HOME/$p_swamp
-    echo $p: adjusting /p/swamp for vamshi
+	p_swamp=$HOME/$p_swamp
+	echo $p: adjusting /p/swamp for vamshi
 fi
 
 p_swamp_fw=${p_swamp}/frameworks
@@ -49,26 +49,28 @@ p_swamp_fw=${p_swamp}/frameworks
 update_platform=$p_swamp_fw/platform/update-platform
 
 if [ ! -x $update_platform ] ; then
-    echo $p: platform update tool missing/unusable 1>&2
-    exit 1
+	echo $p: platform update tool missing/unusable 1>&2
+	exit 1
 fi
+
+
 
 
 function md5_sum {
 
-    local dest_dir="$1"
+	local dest_dir="$1"
 
     (
-	cd "$dest_dir"
-	local checksumfile="md5sum"
+		cd "$dest_dir"
+		local checksumfile="md5sum"
 
-	if test "$(uname -s)" == "Darwin"; then
-	    local MD5EXE="md5"
-	elif test "$(uname -s)" == "Linux"; then
-	    local MD5EXE="md5sum"
-	fi
+		if test "$(uname -s)" == "Darwin"; then
+			local MD5EXE="md5"
+		elif test "$(uname -s)" == "Linux"; then
+			local MD5EXE="md5sum"
+		fi
 
-	find . -type f ! -name "$checksumfile" -exec "$MD5EXE" '{}' ';' > "$checksumfile"
+		find . -type f ! -name "$checksumfile" -exec "$MD5EXE" '{}' ';' > "$checksumfile"
     )
 
 }
@@ -76,7 +78,7 @@ function md5_sum {
 
 version="${2:-$(git tag | sort -V | tail -n 1)}"
 if [ $# -eq 1 ] ; then
-    echo $p: $new_version: version from git
+	echo $p: $new_version: version from git
 fi
 
 vname=java-assess-$version
@@ -88,13 +90,13 @@ create_dir=$1
 destdir="$create_dir/$vname/noarch"
 
 if [ ! -d "${destdir}" ] ; then
-    mkdir -p "${destdir}" || exit 1
+	mkdir -p "${destdir}" || exit 1
 fi
 
 releasedir="$PWD/release"
 
 if [ -d ${releasedir}/swamp-conf ] ; then
-    cp -r ${releasedir}/swamp-conf ${destdir}
+	cp -r ${releasedir}/swamp-conf ${destdir}
 fi
 
 cp -r ${releasedir}/in-files ${destdir}
@@ -116,13 +118,13 @@ echo $p: create run bundle
 $update_platform --framework java  --dir $destdir/in-files || exit 1
 
 if $make_cksum ; then
-    echo $p: checksums
-    md5_sum $(dirname ${destdir})
+	echo $p: checksums
+	md5_sum $(dirname ${destdir})
 fi
 
 if $make_tarball ; then
-    echo $p roll-up tarball
-    ## binary content in tar makes compression slow
-    tar cf $create_dir/$vname.tar -C $create_dir $vname
+	echo $p roll-up tarball
+	## binary content in tar makes compression slow
+	tar cf $create_dir/$vname.tar -C $create_dir $vname
 fi
 
