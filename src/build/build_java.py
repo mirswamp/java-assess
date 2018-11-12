@@ -269,6 +269,251 @@ class JavaPkg(metaclass=ABCMeta):
         # TODO: make this an abstract method
         raise NotImplementedError()
 
+    ## return string of common java options for this build
+    ## The indivual class willput the java options where they need to
+    ## for the type of build sytem being used.
+    ## The version of java used needs to be known, because Java has changed
+    ## options through its lifetime for the "same" things.
+    ## XXX This is not perfect, but by putting the non-perfect stuff
+    ## in one place, we can work on making it better in the future.
+
+    ## THe issue here is that java chooses bad default sizes for many of these
+    ## things.  In the SWAMP, we want a java thing to have access to most
+    ## of a VM's resources, so that it can complete it's task.  Without
+    ## this, you can create a large resource intensive machine which is
+    ## incapable of running java compilations or assessment tools, because
+    ## java is limiting the resources available to far less than the
+    ## VM has been assigned.
+
+    ## The commented-out code in this has been copied from the 3 different
+    ## versions in java-assess, so that what it used to be is documented 
+    ## here for reference.
+    ## The documentation here also explains what is being changed, and why
+    ## it is being changed to help out modifcations in the future.
+
+    ## XXX python inheritance and static methods are stupid.
+    def common_java_opts( self, java_ver ):
+        env_str = ''
+        if utillib.get_cpu_type() == 64:
+            # new_env['MAVEN_OPTS'] = "-Xmx2048m -XX:MaxPermSize=1024m -Xms512m"
+            # new_env['MAVEN_OPTS'] = '-Xmx{0}M -Xss128M -XX:MaxPermSize=2048M -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC'.format(two_thrids_sys_memory)
+            # new_env['MAVEN_OPTS'] = '-Xmx2048M -Xss128M -XX:MaxPermSize=2048M -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC'
+
+            ## This is sub-optimal; for now we will keep on guessing
+            ## this amount.  As memory grows larger, you actually want
+            ## to use more and more of it for the assessment, and just keep
+            ## a small amount for the system and its buffers.
+
+            ## returns size in MB
+            sys_mem = utillib.sys_mem_size() 
+            logging.info("sys_mem_size == %d", sys_mem);
+
+
+            # This example is why the ratio system falls down with
+            # large memory machines.  The model is wrong:
+            #   MEM      JAVA     SYS      WHAT'S-UP
+            #  -----    -------  -------   ---------
+            #   2 GB ->  1.3 GB   0.7 GB   OK?
+            #   3 GB ->  2   GB   1   GB   OK?
+            #   6 GB ->  4   GB   2   GB   SO-SO
+            #  60 GB -> 40   GB  20   GB   ARE-YOU-KIDDING
+            # To fix it, some % of memory should be left for the system,
+            # in some log fashion (to allow for page tables & buffer cache)
+            # and then most of the rest of the system given to the app.
+            # As long as the memory allocation pool isn't pre-allocated,
+            # it just limits the size of java, not sets the szie.
+
+            ## cheap seats version 
+            #   2 GB ->  1.3 GB   0.7 GB
+            #   3 GB ->  2   GB   1   GB
+            #   4 GB ->  3.4 GB   0.6 GB
+            #   6 GB ->  5   GB   1   GB
+            #   8 GB ->  7.1 GB   0.9 GB
+            #  10 GB ->  9.2 GB   0.8 GB   SO-SO (should be scaling system)
+            #  30 GB -> 27   GB   2.7 GB
+            #  60 GB -> 55   GB   5   GB   BETTER
+            #  90 GB -> 83.7 GB   6.3 GB
+
+            ## XXX may want to choose mem_size "NEAR" the thresholds since
+            ## the system steals some memory and we don't get sizing as
+            ## aggressive as this looks.  However, we are into swap as
+            ## it is, so these numbers aren't totally bad.
+
+
+            if (sys_mem >= 30 * 1024):
+                memory_for_java = int(sys_mem * 10 / 11)
+            elif (sys_mem >= 10 * 1024):
+                memory_for_java = int(sys_mem * 9 / 10)
+            elif (sys_mem >= 8 * 1024):
+                memory_for_java = int(sys_mem * 7 / 8)
+            elif (sys_mem >= 4 * 1024):
+                memory_for_java = int(sys_mem * 5 / 6)
+            elif (sys_mem >= 3 * 1024):
+                memory_for_java = int(sys_mem * 3 / 4)
+            else:
+                memory_for_java = int(sys_mem * 2 / 3)
+
+            ## This controls the max amount of "long lived memory" in
+            ## the java process.   This is NOT the memory pool, but rather
+            ## the space available for long term items which will no longer
+            ## be regulraily garbage collected.
+            ## Think of it as 'static data size" for long term java apps
+            ##
+            ## java <= 7 has MaxPermSize        -- which is usually too low
+            ## java >= 8 has MaxMetaspaceSize   -- which is unlimited, but 
+            ##                                  recommendation is to make
+            ##                                  it limited for perf. reasons.
+            ## turn it off for now, it is broken
+            ## XXX the 2048 should be sized to the machine; it is complex,
+            ## and prevents tools that need a lot of memory from working
+            if java_ver >= 8:
+               extra = '-XX:MaxMetaspaceSize=2048M'
+            else:
+               extra = '-XX:MaxPermSize=2048M'
+
+            ## -Xmx####S == maximum size of memory pool
+            xmx = '-Xmx{0}m'.format(memory_for_java)
+            
+            ## XXX see notes in ant about GC options not good for servers
+            ## basically server grade machines don't want that kind of GC
+            ## going on, because it causes too much memory thrashing
+            ## and GCs way too early.   I will need to re-find the reference
+            ## for it.  Some idea of why we are doing these things should
+            ## be documented here.
+
+            env_str += ' ' + xmx
+            env_str += ' ' + extra
+
+            # The default 64bit java thread stack size is 512k.
+            # That was small for some builds, I suppose.
+            # Our VMs are typically 4GB in size, so this allows for
+            # only 32 threads in a 4GB machine!
+            env_str += ' ' + '-Xss128m'               ## thread stack size
+
+        elif utillib.get_cpu_type() == 32:
+            ## seperate calculation since 32 bit is a different beast
+            ## same for now until I think about this.
+            ## 3/4 memory allows 3GB on a 4GB machine, and 768K on a 1M machine
+            sys_mem = utillib.sys_mem_size() 
+            logging.info("sys_mem_size == %d", sys_mem);
+            ## 2^32 / 2^8 / 2^8 == 
+            ## still doing 3/4 of memory ... 3/4 process address space!
+            ## need to save room for java long term and stack.
+            if (sys_mem > 4 * 1024):
+                sys_mem = 4 * 1024
+                logging.info("sys_mem_size LIMIT 32 bit sys to %d", sys_mem);
+            ## XXX linux uses one address space for user+kernel, unlike BSD
+            ## solaris is like the BSD model, where the proc has full
+            ## address space.
+            ## We are only running SWAMP on linux, so need
+            ## to live with only having 1/2 of the address space.
+            ## Actually, we get 3 GB of 4 GB, but we'll do 2/4 for now,
+            ## since that doubles what java was previously doing on 32 bit!
+            if (sys_mem > 3 * 1024):
+                sys_mem = 3 * 1024
+                logging.info("sys_mem_size LIMIT 32 bit proc to %d", sys_mem);
+
+            ## However, for small memory machines, may just want to let
+            ## Java do it's default limits (too small for swamp, though)
+
+            memory_for_java = int(sys_mem * 3 / 4)
+
+            extra = ""
+
+            xmx = '-Xmx{0}m'.format(memory_for_java)
+
+            ## Xms increased from default because most of the tools
+            ## need a lot and it made performance better ??
+
+            env_str += ' ' + xmx              ## max size memory alloc pool
+            env_str += ' ' + "-Xms512m"       ## initial size memory alloc pool
+
+            # OK, try doing this on 32 bit VMs as well
+            # Since java on linux onnly has 3GB max adrress space,
+            # Our VMs are typically 4GB in size, so this allows for
+            # only 24 threads in a 4GB machine!
+            # XXX half the size on 32 bit, see how that works!?
+            # env_str += ' ' + '-Xss128m'	## 64 thread stack size
+            # OK, so the default is 320k for 32 bit, this is 6x as large
+            # but still allows for many stacks
+            # THis was a big failure issue on scientific-32
+            # For now, don't touch this, too memory sensitive on 32 bit
+            # ... which begs why is it so large on 64 bit???
+            # env_str += ' ' + '-Xss2m'		## 32 thread stack size
+
+        # Our VMs are categorized as server class machines by java.
+        # That uses the "parallel mark sweep collector'.  UNFORTUNATELY,
+        # or FORTUNATELY, that collector will error out and complain if
+        # too much time is spent in garbage collection -- which means that
+        # the heap size parameters are set wrongly for the application.
+        # We could use another collector, but there is another issue
+        # intertwined here ...
+        # Yet another inter-twined issue is that if we gave more memory
+        # to java to use, the garbage collection type and need to unload
+        # classes may not be needed....
+
+        # As a work-around, another collector is used to avoid the
+        # GC timeout errors.  The flip side is that we are not getting any
+        # feedback on POORLY CONFIGURED ASSESSMENTs and perhaps spending a
+        # lot of resources (wall-time, memory and CPU) running assessments
+        # which should be reconfigured to run more efficiently.
+        #
+        # This is required to support CMS Class Unloading.   It has the
+        # affect of helping out GC as mentioned above.
+        env_str += ' ' + '-XX:+UseConcMarkSweepGC'
+
+        # Groovy (in gradle) causes problems because it generates on the fly
+        # a huge number of classes used only for setup.  Even though they
+        # are never used again they take up memory and resources which could
+        # be used by an actual build.  This options tells java that such
+        # classes can be unloaded from the image memory, instead of hung onto
+        # for forever.
+        # CMS == Concentric Mark Sweep -- this configures the CMS collector!
+        env_str += ' ' + '-XX:+CMSClassUnloadingEnabled'
+
+        logging.info('java_opts java_ver %d  env %s', java_ver, env_str)
+        
+        return env_str
+
+    ## Determine the actual java version used for a java build
+    ## This is a combination of package and environment settings
+    def common_java_ver_num( self ):
+
+        ## OK, changed to key this section on android_home to verify
+        ## we are on android, otw it kicks in all the time :-(
+        android_java_ver = ''
+        if os.getenv('ANDROID_HOME', '') != '':
+            android_java_ver = os.getenv('SWAMP_ANDROID_JAVA_VER', '')
+            if android_java_ver == '':
+                ## if it is not set, fall back on the old behavior
+                ## for now, ajh means java8; later we'll propogate version info
+                ajh = os.getenv('ANDROID_JAVA_HOME', '')
+                if ajh != '':
+                    android_java_ver = 'java-8'
+                else:
+                    android_java_ver = 'java-7'
+
+        ## XXX this should be centralized; copied here & in maven
+        java_ver = self._pkg_conf.get('package-language-version', 'java-7').lower()
+
+        logging.info('package java_ver %s', java_ver)
+        logging.info("android_java_ver '%s'", android_java_ver)
+
+        ## take care of android-specific behavior
+        if android_java_ver != '':
+            java_ver = android_java_ver
+
+        logging.info("result  java_ver '%s'", java_ver)
+
+
+        java_ver = java_ver.split('-')[-1]
+        java_ver_num = int(java_ver)
+        logging.info('get_env java_ver %d', java_ver_num)
+
+        return java_ver_num
+
+
+
 
 class JavaByteCodePkg(JavaPkg):
 
@@ -612,51 +857,12 @@ class JavaMavenPkg(JavaSrcPkg):
     def get_env(self, pwd):
         new_env = super().get_env(pwd)
 
-        ## if this is set, we use it.
-        android_java_ver = os.getenv('SWAMP_ANDROID_JAVA_VER', '')
-        if android_java_ver == '':
-            ## if it is not set, fall back on the old behavior
-            ## for now, ajh means java8; later we'll propogate version info
-            ajh = os.getenv('ANDROID_JAVA_HOME', '')
-            if ajh != '':
-                android_java_ver = 'java-8'
-            else:
-                android_java_ver = 'java-7'
+        ## which numeric version of java will this build use?
+        java_ver_num = self.common_java_ver_num()
 
-        ## XXX this should be centralized; copied here & in maven
-        java_ver = self._pkg_conf.get('package-language-version', 'java-7').lower()
+        ## set common java executions options
+        new_env['MAVEN_OPTS'] = self.common_java_opts(java_ver_num)
 
-        ## take care of android-specific behavior
-        if android_java_ver != '':
-            java_ver = android_java_ver
-        java_ver = java_ver.split('-')[-1]
-        java_ver = int(java_ver)
-        logging.info('maven get_env java_ver %d\n', java_ver)
-
-        if utillib.get_cpu_type() == 64:
-            # new_env['MAVEN_OPTS'] = "-Xmx2048m -XX:MaxPermSize=1024m -Xms512m"
-            # new_env['MAVEN_OPTS'] = '-Xmx{0}M -Xss128M -XX:MaxPermSize=2048M -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC'.format(two_thrids_sys_memory)
-            # new_env['MAVEN_OPTS'] = '-Xmx2048M -Xss128M -XX:MaxPermSize=2048M -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC'
-
-            two_thrids_sys_memory = int(utillib.sys_mem_size() * 2 / 3)
-
-            ## java <= 7 has MaxPermSize        -- which is usually too low
-            ## java >= 8 has MaxMetaspaceSize   -- which is unlimited, but 
-            ##                                  recommendation is to make
-            ##                                  it limited for perf. reasons.
-            ## turn it off for now, it is broken
-            ## XXX the 2048 should be sized to the machine; it is complex,
-            ## and prevents tools that need a lot of memory from working
-            if java_ver >= 8:
-               extra = '-XX:MaxMetaspaceSize=2048M'
-            else:
-               extra = '-XX:MaxPermSize=2048M'
-
-            ## XXX see notes in ant about GC options not good for servers
-            new_env['MAVEN_OPTS'] = '-Xmx{0}M -Xss128M {1} -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC'.format(two_thrids_sys_memory, extra)
-
-        elif utillib.get_cpu_type() == 32:
-            new_env['MAVEN_OPTS'] = "-Xmx1024m -Xms512m"
         return new_env
 
     def _get_dependency_resolution_errors(self,
@@ -783,11 +989,10 @@ class JavaGradlePkg(JavaSrcPkg):
 
         # if GRADLE_HOME is already set, the caller setup the
         # environment -- leave it alone.
+        ## We used to exit early here, now we just do this if it already
+        ## isn't setup so we can pass options below
+        ## XXX this is still wrong, if gradle is native.
         if 'GRADLE_HOME' not in new_env:
-            ## We used to exit early here, now we just do this if it already
-            ## isn't setup so we can pass options below
-            ## XXX this is still wrong, if gradle is native.
-
             # XXX  Only modify the environment if gradle is
             # included w/ java-assess;
             # Perhaps log a message if it wasn't and
@@ -803,12 +1008,18 @@ class JavaGradlePkg(JavaSrcPkg):
             new_env['PATH'] = '{0}:{1}'.format(osp.join(gradle_home, 'bin'),
                                                new_env['PATH'])
 
+        ## which numeric version of java will this build use?
+        java_ver_num = self.common_java_ver_num()
+
+        ## set common java executions options
+        common_env = self.common_java_opts(java_ver_num)
+
         ## fix for maven central issues .. can't pass via command line
         maven_central_env = "-Dhttps.protocols=TLSv1.2"
 
         ## For the other build systems, this is passed on the command
         ## line.  However, for gradle, must use GRADLE_OPTS
-        new_env['GRADLE_OPTS'] = maven_central_env
+        new_env['GRADLE_OPTS'] = common_env + " " + maven_central_env
 
         return new_env
 
@@ -918,41 +1129,11 @@ class JavaAntPkg(JavaSrcPkg):
     def get_env(self, pwd):
         new_env = super().get_env(pwd)
 
-        ## if this is set, we use it.
-        android_java_ver = os.getenv('SWAMP_ANDROID_JAVA_VER', '')
-        if android_java_ver == '':
-            ## if it is not set, fall back on the old behavior
-            ## for now, ajh means java8; later we'll propogate version info
-            ajh = os.getenv('ANDROID_JAVA_HOME', '')
-            if ajh != '':
-                android_java_ver = 'java-8'
-            else:
-                android_java_ver = 'java-7'
+        ## which numeric version of java will this build use?
+        java_ver_num = self.common_java_ver_num()
 
-        ## XXX this should be centralized; copied here & in maven
-        java_ver = self._pkg_conf.get('package-language-version', 'java-7').lower()
-
-        ## take care of android-specific behavior
-        if android_java_ver != '':
-            java_ver = android_java_ver
-
-        java_ver = java_ver.split('-')[-1]
-        java_ver = int(java_ver)
-        logging.info('ant get_env java_ver %d\n', java_ver)
-
-        # new_env['ANT_OPTS'] = "-Xmx1024m -Xms512m"
-        if utillib.get_cpu_type() == 64:
-            two_thrids_sys_memory = int(utillib.sys_mem_size() * 2 / 3)
-            if java_ver >= 8:
-               extra = '-XX:MaxMetaspaceSize=2048M'
-            else:
-               extra = '-XX:MaxPermSize=2048M'
-
-            ## XXX use of these options is questionable; why are we using them?
-            ## XXX the 2048 should be sized to the machine; it is complex
-            new_env['ANT_OPTS'] = '-Xmx{0}M -Xss128M {1} -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC'.format(two_thrids_sys_memory, extra)
-        elif utillib.get_cpu_type() == 32:
-            new_env['ANT_OPTS'] = "-Xmx1024m -Xms512m"
+        ## set common java executions options
+        new_env['ANT_OPTS'] = self.common_java_opts(java_ver_num)
 
         # XXX in the future we need to use ivy which comes with the
         # platform, or ensure it is used in preference, or built it
