@@ -147,11 +147,70 @@ class SwaTool(metaclass=ABCMeta):
         if 'tool-target-artifacts' not in self._tool_conf:
             self._tool_conf['tool-target-artifacts'] = 'java-compile'
 
-        #Set Max heap size to 2/3
+        ## XXX this is copied code and it doesn't have all
+        ## the comments.  Once everything is rolled together
+        ## the copied code will go away and all the knowledge is
+        ## in one place.   please see src/build/build_java.py for comments
+
+        ## PLEASE SEE BOLO'S NOTES ON JAVA MEMORY
+        ## This is a cheap seats version of doing this for real
+        ## as I describe.  This does not deal with garbage collection
+        ## and java versions, which could help out tools quite a bit.
+
+        sys_mem = utillib.sys_mem_size()
+        logging.info("as sys_mem_size == %d", sys_mem);
+
+        ## old 32 bit default, fallback to avoid warnings.
+        max_heap = 1024
+
+        ## XXX wait for bolo's scaling stuff, this is a stupid version
+        ## XXX with this value, we are already into swap space due
+        ## to other java memory allocations.  It seems to work OK
+        ## for now, so this is actually a tuned number!
+
+        ## XXX may want to choose mem_size "NEAR" the thresholds since
+        ## the system steals some memory and we don't get sizing as
+        ## aggressive as this looks.  However, we are into swap as
+        ## it is, so these numbers aren't totally bad.
+
         if utillib.get_cpu_type() == 64:
-            self._tool_conf['max-heap'] = '-Xmx{0}M'.format(int(utillib.sys_mem_size() * 2 / 3))
+            if (sys_mem >= 30 * 1024):
+                memory_for_java = int(sys_mem * 10 / 11)
+            elif (sys_mem >= 10 * 1024):
+                max_heap = int(sys_mem * 9 / 10)
+            elif (sys_mem >= 8 * 1024):
+                max_heap = int(sys_mem * 7 / 8)
+            elif (sys_mem >= 4 * 1024):
+                max_heap = int(sys_mem * 5 / 6)
+            elif (sys_mem >= 3 * 1024):
+                max_heap = int(sys_mem * 3 / 4)
+            else:
+                max_heap = int(sys_mem * 2 / 3)
         elif utillib.get_cpu_type() == 32:
-            self._tool_conf['max-heap'] = '-Xmx1024M'
+            if (sys_mem > 3 * 1024):
+                sys_mem = 3 * 1024
+                logging.info("as sys_mem_size LIMIT 32 bit proc to %d", sys_mem);
+            max_heap = int(sys_mem * 3 / 4)
+
+        logging.info("as max-heap == %d", max_heap);
+
+        self._tool_conf['max-heap'] = '-Xmx{0}M'.format(max_heap)
+
+        ## ps-jtest uses jvm-max-heap , which is really a parasoft -J option
+        ## may be better to just have a "max heap" number which can then
+        ## be backfilled into any tool-dependent option via the
+        ## invoke/conf rewriter.   For now, just using this which
+        ## will make it work correctly with all parasofts.
+        ## Need to change option name such as:
+        ## -J<max-heap>
+        ## or
+       	## -J-Xmx<max-heap-val>
+        ## XXX option should be renamed jtest-max-heap since tool specific
+
+        self._tool_conf['jvm-max-heap'] = '-J-Xmx{0}M'.format(max_heap)
+
+        ## XXX not addressing garbage collection and other optimizations
+        ## at this time
 
         logging.info('TOOL CONF: %s', self._tool_conf)
 
