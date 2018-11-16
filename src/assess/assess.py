@@ -46,7 +46,7 @@ class SwaTool(metaclass=ABCMeta):
         conf_file = osp.join(input_root_dir, 'services.conf')
         if osp.isfile(conf_file):
             services_conf = confreader.read_conf_into_dict(conf_file)
-            return {key: services_conf[key] for key in services_conf.keys() if key.startswith('tool' + tool_type)}
+            return {key: services_conf[key] for key in services_conf.keys() if key.startswith('tool-' + tool_type)}
         else:
             return dict()
 
