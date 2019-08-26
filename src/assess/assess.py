@@ -287,7 +287,11 @@ class SwaTool(metaclass=ABCMeta):
             
             with open(license_template_file) as fobj:
                 license_blob = ''.join([s for s in fobj])
-                license_string = utillib.expandvar(license_blob, services_conf)
+                # allow a default in tool.conf, and an over-ride
+                # from services.conf, if a different type of license
+                # needs to be specified.
+                license_blob2 = utillib.expandvar(license_blob, self._tool_conf)
+                license_string = utillib.expandvar(license_blob2, services_conf)
                 license_file = osp.join(tool_root_dir, 'license')
 
                 with open(license_file, 'w') as fobj2:
