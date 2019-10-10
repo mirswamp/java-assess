@@ -1,4 +1,15 @@
 -----------------------------------
+java-assess version 2.6.14 (Wed Oct 10 11:50:37 CDT 2018)
+-----------------------------------
+- new modular run.sh to allow further changes and improve reliability
+- variable exports changed for run.sh changes
+
+-----------------------------------
+java-assess version 2.6.13 (Wed Aug 21 11:50:37 CDT 2018)
+-----------------------------------
+- allow services.conf to over-ride tool configuration
+
+-----------------------------------
 java-assess version 2.6.8 (Wed Jun 27 11:50:37 CDT 2018)
 -----------------------------------
 - Added -Dhttps.protocols=TLSv1.2 to build commands to fix failures caused by maven central depricating TLSv1.1
