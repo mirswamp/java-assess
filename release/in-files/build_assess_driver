@@ -60,6 +60,11 @@ while [ $# -gt 0 ] ; do
 	shift
 done
 
+## make these available for other components
+export VMINPUTDIR
+export VMOUTPUTDIR
+
+
 function untar {
     tar -xf ${1}
     echo $(tar tzf ${1} | sed -e 's:/.*::' | uniq)
