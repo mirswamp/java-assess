@@ -59,6 +59,7 @@ class AssessmentSummary:
 
     def __exit__(self, exception_type, value, traceback):
         AssessmentSummary._add(self._root, 'end-ts', utillib.posix_epoch())
+	AssessmentSummary._add(self._root, 'stop-ts', utillib.posix_epoch())
 
         tree = ET.ElementTree(self._root)
         tree.write(self._filename, encoding='UTF-8', xml_declaration=True)
