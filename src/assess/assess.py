@@ -380,7 +380,8 @@ class SwaTool(metaclass=ABCMeta):
                         self.error_msgs += SwaTool._read_err_msg(outfile,
                                                                  self._tool_conf['tool-report-exit-code-msg'])
                     elif self._tool_conf['tool-type'] == 'ps-jtest' and \
-                         self._tool_conf['tool-version'].startswith('10.3'):
+                        (self._tool_conf['tool-version'].startswith('10.3') or \
+                         self._tool_conf['tool-version'].startswith('10.4')):
                         self.error_msgs += SwaTool._read_err_msg(outfile,
                                                                  self._tool_conf['tool-report-exit-code-msg'])
                     else:
