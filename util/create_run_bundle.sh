@@ -2,6 +2,11 @@
 
 p=`basename $0`
 
+## where to find the frameworks content to be copied in
+swamp=/p/swamp
+swamp_fw=${swamp}/frameworks
+ivy_fw=${swamp_fw}/java/ivy/jars
+
 ## Create the "runnable" portion of java-assess.
 ## Script must be run from root directory of java-assess workspace.
 
@@ -28,21 +33,48 @@ mkdir -p "${scriptsdir}" || exit 1
 
 cp -r --no-dereference "${PWD}/resources" ${scriptsdir}
 cp -r --no-dereference "${PWD}/build-monitors" ${scriptsdir}
-cp -r --no-dereference "${PWD}/build-sys" ${scriptsdir}
+#cp -r --no-dereference "${PWD}/build-sys" ${scriptsdir}
 cp -r --no-dereference "${PWD}/bin" ${scriptsdir}
 
 libdir="${scriptsdir}/lib"
 mkdir -p $libdir || exit 1
 cp -r ${PWD}/lib/* $libdir
 
-## manufacture the symbolic links for the versions
-bs_dir="$scriptsdir/build-sys"
-for bs in ivy ;  do
-	if [ ! -e "$bs_dir/$bs" ] ; then
-		## this breaks if > 1 is there .. on purpose
-		(cd ${bs_dir} ; ln -sf "${bs}"-* "${bs}" || echo XXX multiple $bs error )
-	fi
+## install the build systems from the frameworks directory
+## We can install multiple versions, however, the "selected" version
+## is always the default.
+## XXX there is a naming issue, that ther is a coupling between
+## the ivy versions here and in the source code which selects ivy
+## this is a historical issue which is not yet fixed.  Please leave
+## it alone for now; once ivy versions are configurable this will
+## be fixed.
+
+ivy_ver=2.3.0			## the version of ivy used
+other_vers="2.4.0"		## other versions not defaults
+other_vers=			## non for now
+ivy_vers="$ivy_ver $other_vers"	## all the versions
+
+bs_dir="${scriptsdir}/build-sys"
+mkdir -p $bs_dir || exit 1
+for ivy in $ivy_vers ; do
+	ivy_vname=ivy-$ivy
+	ivy_dir=$bs_dir/${ivy_vname}
+	ivy_jar=${ivy_vname}.jar
+
+	mkdir -p $ivy_dir || exit 1
+	cp -p ${ivy_fw}/$ivy_jar $ivy_dir || exit 1
+
+	## manufacture the symbolic links for the default version
+	case $ivy in
+	$ivy_ver)
+		(cd $bs_dir ; rm -f ivy ; ln -s $ivy_vname ivy ) || exit 1
+		;;
+	esac
+
+	## manufacture generic link to jar for all versions
+	(cd $ivy_dir ; rm -f ivy.jar ; ln -s ${ivy_jar} ivy.jar ) || exit 1
 done
+	
 
 java_assess_dir=${libdir}/java_assess
 mkdir -p $java_assess_dir || exit 1
