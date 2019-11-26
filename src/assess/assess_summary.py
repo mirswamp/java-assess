@@ -64,8 +64,39 @@ class AssessmentSummary:
         tree = ET.ElementTree(self._root)
         tree.write(self._filename, encoding='UTF-8', xml_declaration=True)
 
+    def add_non_assessment(self, build_artifact_id, cmd, exit_code,
+                           execution_successful, environ, cwd, report, stdout, 
+                           stderr, starttime, endtime):
+        non_assess_elem = AssessmentSummary._add(self._assessment_artifacts, 'non-assessment')
+
+        if build_artifact_id:
+            AssessmentSummary._add(non_assess_elem, 'build-artifact-id',
+                                   str(build_artifact_id) if isinstance(build_artifact_id, int)
+                                   else build_artifact_id)
+        if osp.isfile(stdout):
+            AssessmentSummary._add(non_assess_elem, 'stdout', osp.basename(stdout))
+        if osp.isfile(stderr):
+            AssessmentSummary._add(non_assess_elem, 'stderr', osp.basename(stderr))
+        AssessmentSummary._add(non_assess_elem, 'exit-code', str(exit_code))
+        AssessmentSummary._add(non_assess_elem, 'execution-successful',
+                utillib.bool_to_string(execution_successful))
+        AssessmentSummary._add(non_assess_elem, 'start-ts', starttime)
+        AssessmentSummary._add(non_assess_elem, 'stop-ts', endtime)
+
+        cmd_elem = AssessmentSummary._add(non_assess_elem, 'command')
+
+        AssessmentSummary._add(cmd_elem, 'cwd', cwd)
+        env_elem = AssessmentSummary._add(cmd_elem, 'environment')
+        for key in environ.keys():
+            AssessmentSummary._add(env_elem, 'env', '{0}={1}'.format(key, environ[key]))
+
+        AssessmentSummary._add(cmd_elem, 'executable', cmd[0])
+        args_elem = AssessmentSummary._add(cmd_elem, 'args')
+        for arg in cmd:
+            AssessmentSummary._add(args_elem, 'arg', arg)
+
     def add_report(self, build_artifact_id, cmd, exit_code,
-                   environ, cwd, report, stdout,
+                   execution_successful, environ, cwd, report, stdout,
                    stderr, tool_type, starttime, endtime,
                    results_root_dir):
 
@@ -84,6 +115,8 @@ class AssessmentSummary:
         if osp.isfile(stderr):
             AssessmentSummary._add(assess_elem, 'stderr', osp.basename(stderr))
         AssessmentSummary._add(assess_elem, 'exit-code', str(exit_code))
+        AssessmentSummary._add(assess_elem, 'execution-successful',
+                utillib.bool_to_string(execution_successful))
         AssessmentSummary._add(assess_elem, 'start-ts', starttime)
         AssessmentSummary._add(assess_elem, 'end-ts', endtime)
 
@@ -96,7 +129,7 @@ class AssessmentSummary:
 
         AssessmentSummary._add(cmd_elem, 'executable', cmd[0])
         args_elem = AssessmentSummary._add(cmd_elem, 'args')
-        for arg in cmd[1:]:
+        for arg in cmd:
             AssessmentSummary._add(args_elem, 'arg', arg)
 
         if tool_type == 'ps-jtest':

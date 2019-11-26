@@ -354,9 +354,15 @@ class SwaTool(metaclass=ABCMeta):
                                                                         build_artifacts['assessment-report'],
                                                                         outfile)
 
+                if self._validate_exit_code(exit_code):
+                    execution_successful = True
+                else:
+                    execution_successful = False
+
                 assessment_summary.add_report(build_artifacts['build-artifact-id'],
                                               cmd,
                                               exit_code,
+                                              execution_successful,
                                               environ,
                                               build_summary_obj.get_pkg_dir(),
                                               build_artifacts['assessment-report'],

@@ -18,9 +18,9 @@ tokens = (
 )
 
 t_QSTRING = r'[\"][^\"]+[\"]'
-t_PARAM = r'<[a-zA-Z][a-zA-Z0-9_-]*(?:[%][^>]+)?>'
+t_PARAM = r'<[a-zA-Z][a-zA-Z0-9-_]*(?:(?:%|\?\+|\?-)[^>]+)?>'
 t_SEPERATER = r'[:=/]'
-t_OPTIONNAME = r'(-{1,2}|[+])[a-zA-Z][a-zA-Z0-9]*(?:[_.-]?[a-zA-Z0-9]+)*'
+t_OPTIONNAME = r'(-{1,2}|[+])[a-zA-Z][a-zA-Z0-9-_.]*'
 t_STRING = r'[\w\d\.-]+'
 t_ignore = ' \t\v\r'  # whitespace
 
@@ -134,8 +134,8 @@ def p_optionarg(p):
 
 def p_param(p):
     '''param : PARAM'''
-    name, seperator = _get_param(p[1])
-    p[0] = ('parameter', name, seperator)
+    name, op, text = _get_param(p[1])
+    p[0] = ('parameter', name, op, text)
 
 
 def p_empty(p):
@@ -155,10 +155,12 @@ def _get_param(param):
         raise Exception('not a valid parameter' + param)
 
     name = match.group('name')
+    op = match.group('op')
+    text = match.group('text')
     # sep = match.group('sep') if(match.group('sep') != None) else None
-    sep = match.group('sep')
+    # sep = match.group('sep')
 
-    return (name, sep)
+    return (name, op, text)
 
 parser = yacc.yacc(debug=True,
                    tabmodule='gencmd_parsetab',
@@ -199,29 +201,50 @@ def _add_sep(sep, _list):
 
 
 def process_parameter(obj, symbol_table):
-    '''obj: is a tuple (symbol_name, seperator)'''
+    '''obj: is a tuple (symbol_name, operator, text)'''
 
-    name = obj[0]
-    sep = obj[1]
+    name, op, text = obj
 
     if name not in symbol_table:
         return None
     else:
         value = symbol_table[name]
 
-    if isinstance(value, str):
-        return value
+    if op is None:
+        if isinstance(value, str):
+            return value
+        elif isinstance(value, list):
+            param = '<' + name + '>'
+            logging.warning("WARNING: Deprecated functionality - expanding param {0}".format(param)
+                    + " should be a string not a list")
+            return value[0]
+        else:
+            raise Exception('value is not a string when op is None')
+    elif op == '%':
+        if not isinstance(value, list):
+            param = '<' + name + op + text + '>'
+            logging.warning("WARNING: Deprecated functionality - expanding param {0}".format(param)
+                     + " should be a list not a string")
+            return value
 
-    # if there is a seperator
-    if sep is None:
-        # value is a list
-        return value[0]
-    elif sep.isspace():
-        return value
-    elif sep.strip() == sep:
-        return sep.join(value)
+        if text.isspace():
+            if text != ' ':
+                raise Exception('text is not as expected')
+            return value
+        elif text.strip() == text:
+            return text.join(value)
+        else:
+            return [val for val in _add_sep(text.strip(), value)]
+    elif op == '?+' or op == '?-':
+        wantTrueValue = op == '?+'
+        isTrueValue = utillib.string_to_bool(value)
+
+        if not (wantTrueValue ^ isTrueValue):
+            return text
+        else:
+            return None
     else:
-        return [val for val in _add_sep(sep.strip(), value)]
+        raise Exception('op is not recognized')
 
 
 def process_option(obj, symbol_table):
@@ -248,37 +271,6 @@ def process_option(obj, symbol_table):
                 return '{0}{1}{2}'.format(name, sep, val)
             else:
                 return '{0}{1}{2}'.format(name, sep, ''.join(val))
-
-
-def process_quotedstring_old(qstr, symbol_table):
-    '''Substitues environment variables and
-    config parameters in the string.
-    quotes the string and returns it'''
-
-    qstr_new = qstr
-    for match in utillib.PARAM_REGEX.finditer(qstr):
-        name = match.groupdict()['name']
-        sep = match.groupdict()['sep']
-
-        if name in symbol_table:
-            value = symbol_table[name]
-            if not isinstance(value, str):
-                if sep is None:
-                    value = value[0]
-                else:
-                    value = sep.join(value)
-        else:
-            value = ''
-
-        f = '<{0}>' if sep is None else '<{0}%{1}>'
-        qstr_new = qstr_new.replace(f.format(match.groupdict()['name'],
-                                             match.groupdict()['sep']),
-                                    value, 1)
-
-    qstr_new = utillib.string_substitute(qstr_new, os.environ)
-
-    # return utillib.quote_str(qstr_new[1:-1])
-    return qstr_new[1:-1]
 
 
 def process_quotedstring(string_template, symbol_table):

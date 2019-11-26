@@ -129,6 +129,7 @@ class BuildSummary(metaclass=ABCMeta):
 
         BuildSummary._add(cmd_root_xml, 'executable', executable)
         args_xml = BuildSummary._add(cmd_root_xml, 'args')
+        BuildSummary._add(args_xml, 'arg', executable)
         for _arg in args:
             BuildSummary._add(args_xml, 'arg', _arg)
 
