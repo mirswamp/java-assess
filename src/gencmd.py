@@ -190,61 +190,10 @@ def process_obj(obj, symbol_table):
         raise Exception('Token type Not found:' + obj)
 
 
-def _add_sep(sep, _list):
-
-    if len(_list) > 0:
-        for l in _list[:-1]:
-            yield l
-            yield sep
-
-        yield _list[-1]
-
-
 def process_parameter(obj, symbol_table):
     '''obj: is a tuple (symbol_name, operator, text)'''
 
-    name, op, text = obj
-
-    if name not in symbol_table:
-        return None
-    else:
-        value = symbol_table[name]
-
-    if op is None:
-        if isinstance(value, str):
-            return value
-        elif isinstance(value, list):
-            param = '<' + name + '>'
-            logging.warning("WARNING: Deprecated functionality - expanding param {0}".format(param)
-                    + " should be a string not a list")
-            return value[0]
-        else:
-            raise Exception('value is not a string when op is None')
-    elif op == '%':
-        if not isinstance(value, list):
-            param = '<' + name + op + text + '>'
-            logging.warning("WARNING: Deprecated functionality - expanding param {0}".format(param)
-                     + " should be a list not a string")
-            return value
-
-        if text.isspace():
-            if text != ' ':
-                raise Exception('text is not as expected')
-            return value
-        elif text.strip() == text:
-            return text.join(value)
-        else:
-            return [val for val in _add_sep(text.strip(), value)]
-    elif op == '?+' or op == '?-':
-        wantTrueValue = op == '?+'
-        isTrueValue = utillib.string_to_bool(value)
-
-        if not (wantTrueValue ^ isTrueValue):
-            return text
-        else:
-            return None
-    else:
-        raise Exception('op is not recognized')
+    return utillib.process_parameter(obj, symbol_table)
 
 
 def process_option(obj, symbol_table):
