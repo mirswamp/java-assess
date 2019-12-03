@@ -106,6 +106,7 @@ ls $s
 ## this was cp -r, but that copies symlinks instead of content; this issue
 ## happens across many swamp installers, should have a standard tool to use
 cp -p $s/* ${destdir}/in-files
+echo "$version" > "${destdir}/in-files/build_assess_driver_version.txt"
 
 cp ${releasedir}/README.txt ${destdir}
 cp ${releasedir}/RELEASE_NOTES.txt ${destdir}

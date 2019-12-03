@@ -54,6 +54,9 @@ while [ $# -gt 0 ] ; do
 		shift
 		;;
 	--version)
+        version_file="$(dirname "$0")/build_assess_driver_version.txt"
+        version=$(cat "$version_file")
+        echo "java-assess $version"
 		exit 0
 		;;
 	esac

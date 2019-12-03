@@ -21,9 +21,7 @@ class PrintVersion(argparse.Action):
         if version:
             version = str(version, encoding='utf-8').strip('\n')
         else:
-            #version = 'v.?.?.?'
-            # THIS is a temporary,
-            version = '2.1.4'
+            version = 'v.?.?.?'
         namespace.version = '{0} {1}'.format(parser.prog, version)
 
 
