@@ -1,4 +1,17 @@
 -----------------------------------
+java-assess version 2.7.0 (Thu Dec 05 14:00:00 CDT 2019)
+-----------------------------------
+- Added support to log non-assessment commands to assessment_summary
+- Added execution-successful property to assessment_summary
+- Fixed executable and args list in summary files
+- Added support to configure tools and result parser via services.conf
+- Support --version for build_assess_driver
+- Support new result parser options
+- This version requires resultparser-3.3.0 or later
+- Improved low-level provisioning code's logging, reliability and
+  support for running in both VMs and Docker containers
+
+-----------------------------------
 java-assess version 2.6.14 (Wed Oct 10 11:50:37 CDT 2018)
 -----------------------------------
 - new modular run.sh to allow further changes and improve reliability

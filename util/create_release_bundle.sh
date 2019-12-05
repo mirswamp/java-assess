@@ -108,9 +108,9 @@ ls $s
 cp -p $s/* ${destdir}/in-files
 echo "$version" > "${destdir}/in-files/build_assess_driver_version.txt"
 
-cp ${releasedir}/README.txt ${destdir}
-cp ${releasedir}/RELEASE_NOTES.txt ${destdir}
-cp ${releasedir}/LICENSE.txt ${destdir}
+cp ${releasedir}/README.txt "$create_dir/$vname"
+cp ${releasedir}/RELEASE_NOTES.txt "$create_dir/$vname"
+cp ${releasedir}/LICENSE.txt "$create_dir/$vname"
 
 echo $p: create run bundle
 ./util/create_run_bundle.sh "${destdir}/in-files" "$version" || exit 1
