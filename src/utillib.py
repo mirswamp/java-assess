@@ -197,7 +197,7 @@ def write_to_file(filename, obj):
     with open(filename, 'w') as fobj:
 
         if isinstance(obj, dict):
-            for key in obj.keys():
+            for key in sorted(obj.keys()):
                 print('{0}={1}'.format(key, obj[key]), file=fobj)
 
         if isinstance(obj, list) or isinstance(obj, set):
