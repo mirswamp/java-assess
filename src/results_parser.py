@@ -156,7 +156,7 @@ def parse_results(input_dir, assessment_summary_file, results_dir, output_dir):
                     status_dot_out.update_task_status(exit_code, short_msg, long_msg)                        
             else:
                 status_dot_out.update_task_status(exit_code,
-                                                  'Results Parser returned Exit Code: {0}'.format(exit_code))
+                                                  'Result Parser Exit Code: {0}'.format(exit_code))
 
     except Exception as err:
         logging.exception(err)
@@ -169,14 +169,19 @@ def parse_results(input_dir, assessment_summary_file, results_dir, output_dir):
                                 osp.dirname(parse_results_dir),
                                 osp.basename(parse_results_dir))
 
-        parse_results_conf = confreader.read_conf_into_dict(parsed_results_data_conf_file)
+        fileFound = osp.isfile(parsed_results_data_conf_file)
+        if fileFound:
+            parse_results_conf = confreader.read_conf_into_dict(parsed_results_data_conf_file)
+
         parse_results_conf['parsed-results-dir'] = osp.basename(parse_results_dir)
         parse_results_conf['parsed-results-archive'] = '{0}.tar.gz'.format(osp.basename(parse_results_dir))
 
         utillib.write_to_file(osp.join(output_dir, 'parsed_results.conf'),
                               parse_results_conf)
+        if not fileFound and exit_code == 0:
+            raise Exception('parsed_results_data.conf file not found at {0}'.format(parsed_results_data_conf_file))
 
     if exit_code != 0:
-        raise Exception('Exit Code Not 0')
+        raise Exception('Result Parser Exit Code {0}'.format(exit_code))
     else:
         return 0
