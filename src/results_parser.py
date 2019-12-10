@@ -69,7 +69,7 @@ def read_task_info_file(weakness_count_file):
     short_msg = ''
     status = 'PASS'
     long_msg = ''
-    
+
     with open(weakness_count_file) as fobj:
         short_msg = fobj.readline().strip()
 
@@ -92,8 +92,8 @@ def read_task_info_file(weakness_count_file):
                                     (next_line, weakness_count_file))
 
     return (short_msg, status, long_msg)
-            
-    
+
+
 def parse_results(input_dir, assessment_summary_file, results_dir, output_dir):
 
     command_template = '{EXECUTABLE}\
@@ -148,15 +148,25 @@ def parse_results(input_dir, assessment_summary_file, results_dir, output_dir):
             logging.info('PARSE RESULTS WORKING DIR: %s', osp.dirname(parser_exe_file))
             logging.info('PARSE RESULTS ENVIRONMENT: %s', environ)
 
-            if exit_code == 0:
+            short_msg = ''
+            status = 'PASS'
+            long_msg = ''
+            if osp.isfile(parse_weakness_count_file):
                 short_msg, status, long_msg = read_task_info_file(parse_weakness_count_file)
-                if status == 'SKIP':
-                    status_dot_out.skip_task(short_msg, long_msg)
-                else:
-                    status_dot_out.update_task_status(exit_code, short_msg, long_msg)                        
             else:
-                status_dot_out.update_task_status(exit_code,
-                                                  'Result Parser Exit Code: {0}'.format(exit_code))
+                status = 'FAIL'
+                long_msg = "weakness count file ({0}) not found".format(parse_weakness_count_file)
+
+            if status == 'SKIP':
+                status_dot_out.skip_task(short_msg, long_msg)
+            else:
+                if (exit_code != 0):
+                    if long_msg:
+                        long_msg += "\n"
+                    long_msg += "Result Parser exit code {0}".format(exit_code)
+                elif status == 'FAIL':
+                    exit_code = 1
+                status_dot_out.update_task_status(exit_code, short_msg, long_msg)
 
     except Exception as err:
         logging.exception(err)
