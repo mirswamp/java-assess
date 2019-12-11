@@ -122,6 +122,10 @@ def parse_results(input_dir, assessment_summary_file, results_dir, output_dir):
         parse_results_logfile = osp.join(parse_results_dir, 'resultparser.log')
         parse_results_output_file = osp.join(parse_results_dir, 'parsed_results.xml')
         parse_weakness_count_file = osp.join(parse_results_dir, 'weakness_count.out')
+        stdout_filename = 'resultparser_stdout.out'
+        stderr_filename = 'resultparser_stderr.out'
+        resultparser_stdout_file = osp.join(parse_results_dir, stdout_filename)
+        resultparser_stderr_file = osp.join(parse_results_dir, stderr_filename)
 
         with LogTaskStatus('parse-results') as status_dot_out:
 
@@ -142,7 +146,10 @@ def parse_results(input_dir, assessment_summary_file, results_dir, output_dir):
                                               LOGFILE=parse_results_logfile)
 
             logging.info('RESULT PARSER CMD: ' + command)
-            exit_code, environ = utillib.run_cmd(command, cwd=osp.dirname(parser_exe_file))
+            exit_code, environ = utillib.run_cmd(command,
+                                                 cwd=osp.dirname(parser_exe_file),
+                                                 outfile=resultparser_stdout_file,
+                                                 errfile=resultparser_stderr_file)
 
             logging.info('PARSE RESULTS ERROR CODE: %d', exit_code)
             logging.info('PARSE RESULTS WORKING DIR: %s', osp.dirname(parser_exe_file))
@@ -181,13 +188,15 @@ def parse_results(input_dir, assessment_summary_file, results_dir, output_dir):
 
         fileFound = osp.isfile(parsed_results_data_conf_file)
         if fileFound:
-            parse_results_conf = confreader.read_conf_into_dict(parsed_results_data_conf_file)
+            parsed_results_conf = confreader.read_conf_into_dict(parsed_results_data_conf_file)
 
-        parse_results_conf['parsed-results-dir'] = osp.basename(parse_results_dir)
-        parse_results_conf['parsed-results-archive'] = '{0}.tar.gz'.format(osp.basename(parse_results_dir))
+        parsed_results_conf['parsed-results-dir'] = osp.basename(parse_results_dir)
+        parsed_results_conf['parsed-results-archive'] = '{0}.tar.gz'.format(osp.basename(parse_results_dir))
+        parsed_results_conf['resultparser-stdout'] = stdout_filename
+        parsed_results_conf['resultparser-stderr'] = stderr_filename
 
         utillib.write_to_file(osp.join(output_dir, 'parsed_results.conf'),
-                              parse_results_conf)
+                              parsed_results_conf)
         if not fileFound and exit_code == 0:
             raise Exception('parsed_results_data.conf file not found at {0}'.format(parsed_results_data_conf_file))
 
