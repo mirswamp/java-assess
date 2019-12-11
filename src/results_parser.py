@@ -192,8 +192,8 @@ def parse_results(input_dir, assessment_summary_file, results_dir, output_dir):
 
         parsed_results_conf['parsed-results-dir'] = osp.basename(parse_results_dir)
         parsed_results_conf['parsed-results-archive'] = '{0}.tar.gz'.format(osp.basename(parse_results_dir))
-        parsed_results_conf['resultparser-stdout'] = stdout_filename
-        parsed_results_conf['resultparser-stderr'] = stderr_filename
+        parsed_results_conf['resultparser-stdout-file'] = stdout_filename
+        parsed_results_conf['resultparser-stderr-file'] = stderr_filename
 
         utillib.write_to_file(osp.join(output_dir, 'parsed_results.conf'),
                               parsed_results_conf)
