@@ -1,4 +1,13 @@
 -----------------------------------
+java-assess version 2.7.1 (2019-12-11)
+-----------------------------------
+- always read parsed_results_data.conf if available
+- generate a proper error if parsed_results_data.conf is missing
+- always get task information for parse-results from weakness_count.out file
+- put stdout and stderr of the resultparser in resultparser_stdout.out, and
+  resultparser_stderr.out in the parsed_results directory
+
+-----------------------------------
 java-assess version 2.7.0 (Thu Dec 05 14:00:00 CDT 2019)
 -----------------------------------
 - Added support to log non-assessment commands to assessment_summary
