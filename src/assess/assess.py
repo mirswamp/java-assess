@@ -204,7 +204,7 @@ class SwaTool(metaclass=ABCMeta):
         ## Need to change option name such as:
         ## -J<max-heap>
         ## or
-       	## -J-Xmx<max-heap-val>
+        ## -J-Xmx<max-heap-val>
         ## XXX option should be renamed jtest-max-heap since tool specific
 
         self._tool_conf['jvm-max-heap'] = '-J-Xmx{0}M'.format(max_heap)
@@ -874,16 +874,27 @@ class Jtest10(SwaTool):
     
     def _get_build_artifacts(self, build_summary_obj, results_root_dir):
 
+        # resource_name is string used to prefix source file paths
+        resource_name = 'RESOURCE1'
+        build_root_dir = build_summary_obj._build_summary['build-root-dir']
+
         for build_artifacts in \
                 build_summary_obj.get_build_artifacts(*self._tool_conf['tool-target-artifacts'].split()):
 
             data_json = copy.deepcopy(Jtest10.DATA_JSON_TEMPLATE)
-            data_json['name'] = osp.basename(build_summary_obj.get_pkg_dir())
-            data_json['location'] = build_summary_obj.get_pkg_dir()
+
+            # name is name of RESOURCE
+            data_json['name'] = resource_name
+            # location is path to RESOURCE base directory
+            data_json['location'] = build_root_dir
             data_json['compilations'][0]['bootpath'] = self._get_java_home_jars()
             
+            # sourcepath needs to include the RESOURCE location, otherwise everything is filtered out
+            #   unknown how this affects anything else
+            data_json['compilations'][0]['sourcepath'].append(build_root_dir)
+
             if 'srcdir' in build_artifacts:
-                data_json['compilations'][0]['sourcepath'] = build_artifacts['srcdir']
+                data_json['compilations'][0]['sourcepath'].extend(build_artifacts['srcdir'])
 
             if 'sourcepath' in build_artifacts:
                 data_json['compilations'][0]['sourcepath'].extend(build_artifacts['sourcepath'])
@@ -913,9 +924,9 @@ class Jtest10(SwaTool):
 
             src_file_list_file = osp.join(results_root_dir,
                                           'files{0}.lst'.format(build_artifacts['build-artifact-id']))
+            # entries in files list are <RESOURCE name> '/' <path_relative to RESOURCE base directory>
             with open(src_file_list_file, 'w') as fp:
-                fp.writelines(['{0}\n'.format(osp.relpath(_file,
-                                                          osp.dirname(data_json['location'])))
+                fp.writelines(['{0}/{1}\n'.format(resource_name, osp.relpath(_file, build_root_dir))
                               for _file in build_artifacts['srcfile']])
 
             new_build_artifacts = dict()
