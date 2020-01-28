@@ -1,4 +1,10 @@
 -----------------------------------
+java-assess version 2.7.3 (2020-01-28)
+-----------------------------------
+- support negative epoch seconds and negative time differences; will not occur
+  in normal operation, but can if the clock is not set or goes backwards
+
+-----------------------------------
 java-assess version 2.7.2 (2020-01-16)
 -----------------------------------
 - Fix Parasoft J-test assessment failures when both the package and build
