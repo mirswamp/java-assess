@@ -836,14 +836,21 @@ class Jtest10(SwaTool):
               "name": "",
               "location": "",
               "type": "classpath_project",
-              "build_id": "10.3.2.20170508-20170519-0926",
+              # XXX this should be in the tool config, not hardwired
+              # in java-assess
+              # "build_id": "10.3.2.20170508-20170519-0926",
+              # try leaving it out ...
+              # "build_id": "10.4.2.20190522-20190522-1908",
               "schema_version": "1.1",
-              "testoutcomes": [
-                  {
-                      "type": "junit",
-                      "files": []
-                  }
-              ],
+              # this is for dynamic testing, to point at junit
+              # result files.  removed for now until we do dynamic
+              # testing.
+              #"testoutcomes": [
+              #    {
+              #        "type": "junit",
+              #        "files": []
+              #    }
+              #],
               "compilations": [
                   {
                       "id": "defaultCompile",
