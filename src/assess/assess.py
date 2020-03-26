@@ -175,7 +175,7 @@ class SwaTool(metaclass=ABCMeta):
 
         if utillib.get_cpu_type() == 64:
             if (sys_mem >= 30 * 1024):
-                memory_for_java = int(sys_mem * 10 / 11)
+                max_heap = int(sys_mem * 10 / 11)
             elif (sys_mem >= 10 * 1024):
                 max_heap = int(sys_mem * 9 / 10)
             elif (sys_mem >= 8 * 1024):
