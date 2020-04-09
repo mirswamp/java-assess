@@ -444,9 +444,36 @@ def setup_java_home(java_versions):
         'scientific-7.3-64': 'rh-like',
 
         'centos-7.4-64': 'rh-like',
-        'centos-7.4-32': 'rh-like',
         'rhel-7.4-64': 'rh-like',
         'scientific-7.4-64': 'rh-like',
+
+        'centos-7.5-64': 'rh-like',
+        'rhel-7.5-64': 'rh-like',
+        'scientific-7.5-64': 'rh-like',
+
+        'centos-7.6-64': 'rh-like',
+        'rhel-7.6-64': 'rh-like',
+        'scientific-7.6-64': 'rh-like',
+
+        'centos-7.7-64': 'rh-like',
+        'rhel-7.7-64': 'rh-like',
+        'scientific-7.7-64': 'rh-like',
+
+        'centos-7.8-64': 'rh-like',
+        'rhel-7.8-64': 'rh-like',
+        'scientific-7.8-64': 'rh-like',
+
+        'centos-7.9-64': 'rh-like',
+        'rhel-7.9-64': 'rh-like',
+        'scientific-7.9-64': 'rh-like',
+
+        'centos-7.10-64': 'rh-like',
+        'rhel-7.10-64': 'rh-like',
+        'scientific-7.10-64': 'rh-like',
+
+        'centos-7.11-64': 'rh-like',
+        'rhel-7.11-64': 'rh-like',
+        'scientific-7.11-64': 'rh-like',
 
         'centos-5.11-64': 'rh-like',
         'centos-5.11-32': 'rh-like',
@@ -535,6 +562,35 @@ def setup_java_home(java_versions):
         'debian-9.11-64': 'deb-64-like',
         'debian-9.12-64': 'deb-64-like',
 
+        ## haven't looked at it yet, but ... at least its a check-seats tryout
+        'debian-10.0-64': 'deb-64-like',
+        'debian-10.1-64': 'deb-64-like',
+        'debian-10.2-64': 'deb-64-like',
+        'debian-10.3-64': 'deb-64-like',
+        'debian-10.4-64': 'deb-64-like',
+        'debian-10.5-64': 'deb-64-like',
+        'debian-10.6-64': 'deb-64-like',
+        'debian-10.7-64': 'deb-64-like',
+        'debian-10.9-64': 'deb-64-like',
+        'debian-10.10-64': 'deb-64-like',
+        'debian-10.11-64': 'deb-64-like',
+        'debian-10.12-64': 'deb-64-like',
+
+        ## haven't looked at it yet, but ... at least its a check-seats tryout
+        'debian-11.0-64': 'deb-64-like',
+        'debian-11.1-64': 'deb-64-like',
+        'debian-11.2-64': 'deb-64-like',
+        'debian-11.3-64': 'deb-64-like',
+        'debian-11.4-64': 'deb-64-like',
+        'debian-11.5-64': 'deb-64-like',
+        'debian-11.6-64': 'deb-64-like',
+        'debian-11.7-64': 'deb-64-like',
+        'debian-11.9-64': 'deb-64-like',
+        'debian-11.10-64': 'deb-64-like',
+        'debian-11.11-64': 'deb-64-like',
+        'debian-11.12-64': 'deb-64-like',
+
+	## ubuntus
         'ubuntu-10.04-64': 'deb7-64-like',
         'ubuntu-12.04-64': 'deb-64-like',
         'ubuntu-12.04.2-64': 'deb-64-like',
@@ -544,6 +600,7 @@ def setup_java_home(java_versions):
         'ubuntu-14.04-64': 'deb-64-like',
         'ubuntu-16.04-64': 'deb-64-like',
         'ubuntu-18.04-64': 'deb-64-like',
+        'ubuntu-20.04-64': 'deb-64-like',
 
         'android-ubuntu-10.04-64': 'deb7-64-like',
         'android-ubuntu-12.04-64': 'deb-64-like',
@@ -554,18 +611,21 @@ def setup_java_home(java_versions):
         'android-ubuntu-14.04-64': 'deb-64-like',
         'android-ubuntu-16.04-64': 'deb-64-like',
         'android-ubuntu-18.04-64': 'deb-64-like',
+        'android-ubuntu-20.04-64': 'deb-64-like',
 
         'ubuntu-10.04-32': 'deb7-32-like',
         'ubuntu-12.04-32': 'deb-32-like',
         'ubuntu-14.04-32': 'deb-32-like',
         'ubuntu-16.04-32': 'deb-32-like',
         'ubuntu-18.04-32': 'deb-32-like',
+        'ubuntu-20.04-32': 'deb-32-like',
 
         'android-ubuntu-10.04-32': 'deb7-32-like',
         'android-ubuntu-12.04-32': 'deb-32-like',
         'android-ubuntu-14.04-32': 'deb-32-like',
         'android-ubuntu-16.04-32': 'deb-32-like',
         'android-ubuntu-18.04-32': 'deb-32-like',
+        'android-ubuntu-20.04-32': 'deb-32-like',
     }
     if plat_name not in os_family:
         raise Exception("No configuration to set JAVA_HOME on %s", plat_name)
