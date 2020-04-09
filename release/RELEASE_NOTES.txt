@@ -1,4 +1,13 @@
 -----------------------------------
+java-assess version 2.7.4 (2020-04-09)
+-----------------------------------
+- Update dependencies for newer versions of platforms
+- Update java configuration for newer versions of platforms
+- Eliminate version-specific ps-jtest configuration; the
+  versions were not matched, which caused the tool to log
+  an unneeded warning.   Now it is version independent.
+
+-----------------------------------
 java-assess version 2.7.3 (2020-01-28)
 -----------------------------------
 - support negative epoch seconds and negative time differences; will not occur
