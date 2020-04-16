@@ -590,7 +590,7 @@ def setup_java_home(java_versions):
         'debian-11.11-64': 'deb-64-like',
         'debian-11.12-64': 'deb-64-like',
 
-	## ubuntus
+        ## ubuntus
         'ubuntu-10.04-64': 'deb7-64-like',
         'ubuntu-12.04-64': 'deb-64-like',
         'ubuntu-12.04.2-64': 'deb-64-like',
