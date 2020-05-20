@@ -558,6 +558,50 @@ class Findbugs(SwaTool):
         self.stdin_file_path = None
 
 
+## OK, so really classpath is "expensive to generate", and we should
+## only generate it in the cases when %classpath is referenced.   However,
+## there is NO GOOD WAY to do that in the code base.   Basically if
+## we could look at the tool-invoke, see that <classpath% > is used,
+## and generate classpath on demend, then it would be great.  Otherwise,
+## if we generate it all the time, then well, it slows all the tools
+## what don't use it.
+## For now, this is almost an exact coyp of  findbugs, except
+## for generating a file containing the list of class files.
+
+class CryptoGuard(SwaTool):
+
+    def __init__(self, input_root_dir, tool_root_dir):
+        SwaTool.__init__(self, input_root_dir, tool_root_dir)
+#        self._tool_conf['tool-target-artifacts'] = 'java-compile java-bytecode'
+
+    def _get_env(self):
+        ## Cryptoguard always needs a correct JAVA7_HOME available
+        new_env = dict(os.environ)
+        java7_home = 'JAVA7_HOME'
+        utillib.setup_java_home('java-7', java7_home, new_env)
+        return new_env
+
+    def _modify_build_artifacts(self, build_artifacts, results_root_dir):
+
+        logging.info("Cryptoguard::_modify_build_artifacts, building classfile");
+        if 'classfile' not in build_artifacts:
+            logging.info("building classfile");
+            build_artifacts['classfile'] = SwaTool._get_class_files(build_artifacts['srcfile'],
+                                                                    build_artifacts['destdir'],
+                                                                    build_artifacts.get('encoding',
+                                                                                        BuildArtifacts.UTF_8))
+            logging.info("classfile: %s", build_artifacts['classfile'])
+        else:
+            logging.info("classfile already present");
+
+        if build_artifacts['classfile']:
+            logging.info("classfile found after building");
+            return True
+        else:
+            logging.info("classfile NOT found after building");
+            return False
+        
+
 class Jtest(SwaTool):
 
     @classmethod
@@ -989,6 +1033,8 @@ def assess(input_root_dir,
         swatool = AppHealthCheck(input_root_dir, tool_root_dir)
     elif tool_conf['tool-type'] == 'dependency-check':
         swatool = OwaspDependencyCheck(input_root_dir, tool_root_dir)
+    elif tool_conf['tool-type'] == 'cryptoguard':
+        swatool = CryptoGuard(input_root_dir, tool_root_dir)
     else:
         swatool = JavaSwaTool(input_root_dir, tool_root_dir)
 
