@@ -702,7 +702,7 @@ class JavaSrcPkg(JavaPkg):
             logging.info('BUILD ENVIRONMENT %s', self.get_env(pkg_build_dir))
             logging.info('BUILD COMMAND %s', build_cmd)
 
-            (exit_code, environ) = utillib.run_cmd(' '.join(build_cmd),
+            (exit_code, environ) = utillib.run_cmd(build_cmd,
                                                    cwd=pkg_build_dir,
                                                    outfile=self._build_conf['stdout-file'],
                                                    errfile=self._build_conf['stderr-file'],
