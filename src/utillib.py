@@ -334,7 +334,7 @@ def get_uuid():
     return str(uuid.uuid4())
 
 
-def setup_java_home(java_versions):
+def setup_java_home(java_versions, var_name=None, environ=None):
 
     # The SWAMP defaults to java8 if it is available
     java_version = 'java-8'
@@ -731,6 +731,19 @@ def setup_java_home(java_versions):
     if not os.path.isdir(java_home):
         logging.info("setup_java: version %s: NO JAVA, DEFAULT TO PLATFORM",
                      java_version)
+        return
+
+    ## just set this environment, don't modify path
+    ## this was added for cryptoguard's JAVA7_HOME requirement
+    ## Error handling is bad in this case, but it is pretty bad
+    ## in this mess regardless.  We only deploy it on plats w/ J7!
+    if var_name is not None:
+        if environ is not None:
+            environ[var_name] = java_home
+        else:
+            os.environ[var_name] = java_home
+        logging.info("setup_java: var-only: set var %s to %s",
+                     var_name, java_home)
         return
 
     os.environ['JAVA_HOME'] = java_home
