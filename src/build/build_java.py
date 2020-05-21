@@ -1307,6 +1307,15 @@ class JavaAndroidApkPkg(JavaPkg):
         # Do not call the parent class's init, package-unarchive not required for apk files
         #JavaPkg.__init__(self, pkg_conf, input_root_dir, build_root_dir)
 
+        ###
+        ### ^^^ WHAT??????  FIX ME
+        ###
+        #
+        # Package.__init__ needs to be called to initialize _build_conf_extras,
+        # Since it isn't, do it here
+        #
+        self._build_conf_extras = dict()
+
         if isinstance(pkg_conf, dict):
             self._pkg_conf = pkg_conf
         else:

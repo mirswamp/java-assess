@@ -1,4 +1,10 @@
 -----------------------------------
+java-assess version 2.7.6 (2020-05-21)
+-----------------------------------
+- fix bug due to failure to initialize base class for
+  JavaAndroidApkPkg
+
+-----------------------------------
 java-assess version 2.7.5 (2020-05-20)
 -----------------------------------
 - add missing keys and values to build.conf: build-stderr-file,
