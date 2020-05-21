@@ -1,7 +1,12 @@
 -----------------------------------
 java-assess version 2.7.5 (2020-05-20)
 -----------------------------------
-- Add prototype cryptguard swamp tool
+- add missing keys and values to build.conf: build-stderr-file,
+  build-stdout-file, config-stderr-file, config-stdout-file, and
+  source-compiles 
+- changed build.conf key: build-root-dir -> build-dir
+- use stop-ts instead of end-ts in assessment_summary.xml
+- Add prototype cryptoguard swamp tool
 
 -----------------------------------
 java-assess version 2.7.4 (2020-04-09)

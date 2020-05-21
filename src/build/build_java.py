@@ -247,6 +247,8 @@ class JavaPkg(metaclass=ABCMeta):
         else:
             self._pkg_conf = confreader.read_conf_into_dict(pkg_conf)
 
+        self._build_conf_extras = dict()
+
         logging.info('PACKAGE CONF: %s', self._pkg_conf)
 
         with LogTaskStatus('package-unarchive'):
@@ -434,13 +436,13 @@ class JavaPkg(metaclass=ABCMeta):
             # Our VMs are typically 4GB in size, so this allows for
             # only 24 threads in a 4GB machine!
             # XXX half the size on 32 bit, see how that works!?
-            # env_str += ' ' + '-Xss128m'	## 64 thread stack size
+            # env_str += ' ' + '-Xss128m'       ## 64 thread stack size
             # OK, so the default is 320k for 32 bit, this is 6x as large
             # but still allows for many stacks
             # THis was a big failure issue on scientific-32
             # For now, don't touch this, too memory sensitive on 32 bit
             # ... which begs why is it so large on 64 bit???
-            # env_str += ' ' + '-Xss2m'		## 32 thread stack size
+            # env_str += ' ' + '-Xss2m'         ## 32 thread stack size
 
         # Our VMs are categorized as server class machines by java.
         # That uses the "parallel mark sweep collector'.  UNFORTUNATELY,
@@ -512,6 +514,12 @@ class JavaPkg(metaclass=ABCMeta):
         logging.info('get_env java_ver %d', java_ver_num)
 
         return java_ver_num
+
+    def add_build_conf_attr(self, name, value):
+        self._build_conf_extras[name] = value
+
+    def get_build_conf_extras(self):
+        return self._build_conf_extras
 
 
 
@@ -633,8 +641,13 @@ class JavaSrcPkg(JavaPkg):
                 logging.info('CONFIGURE COMMAND: %s', config_cmd)
                 logging.info('CONFIGURE WORKING DIR: %s', pkg_config_dir)
 
-                outfile = osp.join(build_root_dir, 'config_stdout.out')
-                errfile = osp.join(build_root_dir, 'config_stderr.out')
+                config_stdout = 'config_stdout.out'
+                config_stderr = 'config_stderr.out'
+                outfile = osp.join(build_root_dir, config_stdout)
+                errfile = osp.join(build_root_dir, config_stderr)
+
+                self.add_build_conf_attr('config-stdout-file', config_stdout)
+                self.add_build_conf_attr('config-stderr-file', config_stderr)
 
                 exit_code, environ = utillib.run_cmd(config_cmd,
                                                      outfile=outfile,
@@ -676,8 +689,14 @@ class JavaSrcPkg(JavaPkg):
         if 'build-target' in self._build_conf:
             self._build_conf['build-target'] = self._build_conf['build-target'].split()
 
-        self._build_conf['stdout-file'] = osp.join(build_root_dir, 'build_stdout.out')
-        self._build_conf['stderr-file'] = osp.join(build_root_dir, 'build_stderr.out')
+
+        build_stdout = 'build_stdout.out'
+        build_stderr = 'build_stderr.out'
+
+        self._build_conf['stdout-file'] = osp.join(build_root_dir, build_stdout)
+        self._build_conf['stderr-file'] = osp.join(build_root_dir, build_stderr)
+        self.add_build_conf_attr('build-stdout-file', build_stdout)
+        self.add_build_conf_attr('build-stderr-file', build_stderr)
 
         if ('build-monitor-output-file' in self._build_conf) and \
            osp.isfile(self._build_conf['build-monitor-output-file']):
@@ -1257,6 +1276,7 @@ class JavaNoBuildPkg(JavaAntPkg):
                 src_compiles_xmlfile = nobuild.no_build_helper(dict(self._pkg_conf),
                                                                build_root_dir,
                                                                JavaPkg.PKG_ROOT_DIR)
+            self.add_build_conf_attr('source-compiles', nobuild.source_compiles_filename)
             build_summary.add_nobuild_summary(0, src_compiles_xmlfile)
             return new_pkg_conf
 
@@ -1432,7 +1452,8 @@ def build(input_root_dir, output_root_dir, build_root_dir):
                                                 osp.basename(build_root_dir))
 
             build_conf['build-archive'] = osp.basename(build_archive)
-            build_conf['build-root-dir'] = osp.basename(build_root_dir)
+            build_conf['build-dir'] = osp.basename(build_root_dir)
+            build_conf.update(pkg.get_build_conf_extras())
 
             utillib.write_to_file(osp.join(output_root_dir, 'build.conf'), build_conf)
 
