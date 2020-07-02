@@ -4,14 +4,32 @@ p=`basename $0`
 
 ## where to find the frameworks content to be copied in
 swamp=/p/swamp
+
+## Due to positional args, special case for this, to avoid rewrite
+
+case $1 in
+--swamp-root)
+	swamp=$2
+	shift
+	shift
+	;;
+esac
+
+if [ ! -d "$swamp" ] ; then
+	echo $p: swamp root missing 1>&2
+	exit 1
+fi
+
 swamp_fw=${swamp}/frameworks
 ivy_fw=${swamp_fw}/java/ivy/jars
+
+
 
 ## Create the "runnable" portion of java-assess.
 ## Script must be run from root directory of java-assess workspace.
 
 if [ $# -lt 1 -o $# -gt 2 ] ; then
-	echo usage: $p dest-dir '[version]' 1>&2
+	echo usage: $p [--swamp-root dir]  dest-dir '[version]' 1>&2
 	exit 1
 fi
 

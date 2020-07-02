@@ -8,8 +8,14 @@ p=`basename $0`
 make_tarball=true
 make_cksum=true
 
+p_swamp=/p/swamp
+
 while [ $# -gt 0 ] ; do
 	case $1 in
+	--swamp-root)
+		p_swamp=$2
+		shift
+		;;
 	--no-tar)
 		make_tarball=false
 		;;
@@ -36,12 +42,18 @@ if [ $# -lt 1  -o  $# -gt 2 ] ; then
 	exit 1
 fi
 
-p_swamp=/p/swamp
 
-## hack for vamshi's laptop environment
+if false ; then
+	## hack for vamshi's laptop environment
+	if [ ! -d $p_swamp ] ; then
+		p_swamp=$HOME/$p_swamp
+		echo $p: adjusting /p/swamp for vamshi
+	fi
+fi
+
 if [ ! -d $p_swamp ] ; then
-	p_swamp=$HOME/$p_swamp
-	echo $p: adjusting /p/swamp for vamshi
+	echo $p: $p_swamp: swamp root dir missing 1>&2
+	exit 1
 fi
 
 p_swamp_fw=${p_swamp}/frameworks
@@ -113,9 +125,16 @@ cp ${releasedir}/RELEASE_NOTES.txt "$create_dir/$vname"
 cp ${releasedir}/LICENSE.txt "$create_dir/$vname"
 
 echo $p: create run bundle
-./util/create_run_bundle.sh "${destdir}/in-files" "$version" || exit 1
+crb=./util/create_run_bundle.sh 
+if [ "$p_swamp" != "/p/swamp" ] ; then
+	crb="${crb} --swamp-root $p_swamp"
+fi
+$crb "${destdir}/in-files" "$version" || exit 1
 
 ## does it's own output
+if [ "$p_swamp" != "/p/swamp" ] ; then
+	update_platform="${update_platform} --swamp-root $p_swamp"
+fi
 $update_platform --framework java  --dir $destdir/in-files || exit 1
 
 if $make_cksum ; then
