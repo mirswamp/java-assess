@@ -1,4 +1,20 @@
 -----------------------------------
+java-assess version 2.7.6 (2020-05-21)
+-----------------------------------
+- fix bug due to failure to initialize base class for
+  JavaAndroidApkPkg
+
+-----------------------------------
+java-assess version 2.7.5 (2020-05-20)
+-----------------------------------
+- add missing keys and values to build.conf: build-stderr-file,
+  build-stdout-file, config-stderr-file, config-stdout-file, and
+  source-compiles 
+- changed build.conf key: build-root-dir -> build-dir
+- use stop-ts instead of end-ts in assessment_summary.xml
+- Add prototype cryptoguard swamp tool
+
+-----------------------------------
 java-assess version 2.7.4 (2020-04-09)
 -----------------------------------
 - Update dependencies for newer versions of platforms

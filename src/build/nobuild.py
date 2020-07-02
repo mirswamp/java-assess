@@ -5,6 +5,7 @@ import logging
 from ..logger import LogTaskStatus
 from .. import utillib
 
+source_compiles_filename = 'source-compiles.xml'
 
 class NoBuildHelperError(Exception):
 
@@ -53,7 +54,7 @@ def no_build_helper(pkg_conf, build_root_dir, pkg_root_dir):
                                               pkg_conf.get('build-dir', '.')))
 
         build_file = osp.join(build_root_dir, 'build.xml')
-        src_compiles_xmlfile = osp.join(build_root_dir, 'source-compiles.xml')
+        src_compiles_xmlfile = osp.join(build_root_dir, source_compiles_filename)
         msg_file = osp.join(build_root_dir, 'source-compiles-msg.out')
         no_build_helper_script = utillib.string_substitute('${SCRIPTS_DIR}/resources/no_build_helper',
                                                            os.environ)
