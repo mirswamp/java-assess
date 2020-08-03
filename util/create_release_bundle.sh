@@ -51,12 +51,22 @@ if false ; then
 	fi
 fi
 
-if [ ! -d $p_swamp ] ; then
+if [ -n "$SWAMP_FRAMEWORK_DEPENDENCIES" ]; then
+	if [ ! -d "$SWAMP_FRAMEWORK_DEPENDENCIES" ]; then
+		echo "$p: SWAMP_FRAMEWORK_DEPENDENCIES set, but not a directory ($SWAMP_FRAMEWORK_DEPENDENCIES)" 1>&2
+		exit 1
+	fi
+	## SWAMP_FRAMEWORK_DEPENDENCIES overrides p_swamp & --swamp-root
+	## XXX all uses of p_swamp should be removed
+	## set p_swamp here, to prevent --swamp-root propagation
+	p_swamp=/p/swamp
+	p_swamp_fw=$SWAMP_FRAMEWORK_DEPENDENCIES
+elif [ ! -d $p_swamp ] ; then
 	echo $p: $p_swamp: swamp root dir missing 1>&2
 	exit 1
+else
+	p_swamp_fw=${p_swamp}/frameworks
 fi
-
-p_swamp_fw=${p_swamp}/frameworks
 
 update_platform=$p_swamp_fw/platform/update-platform
 
@@ -147,4 +157,3 @@ if $make_tarball ; then
 	## binary content in tar makes compression slow
 	tar cf $create_dir/$vname.tar -C $create_dir $vname
 fi
-

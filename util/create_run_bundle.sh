@@ -15,12 +15,24 @@ case $1 in
 	;;
 esac
 
-if [ ! -d "$swamp" ] ; then
+
+if [ -n "$SWAMP_FRAMEWORK_DEPENDENCIES" ]; then
+	if [ ! -d "$SWAMP_FRAMEWORK_DEPENDENCIES" ]; then
+		echo "$p: SWAMP_FRAMEWORK_DEPENDENCIES set, but not a directory ($SWAMP_FRAMEWORK_DEPENDENCIES)" 1>&2
+		exit 1
+	fi
+	## SWAMP_FRAMEWORK_DEPENDENCIES overrides p_swamp
+	## XXX all uses of p_swamp should be removed
+	## set swamp here, to an invalid value
+	swamp=UNDEFINED_USING__SWAMP_FRAMEWORK_DEPENDENCIES__VAR
+	swamp_fw=$SWAMP_FRAMEWORK_DEPENDENCIES
+elif [ ! -d "$swamp" ] ; then
 	echo $p: swamp root missing 1>&2
 	exit 1
+else
+	swamp_fw=${swamp}/frameworks
 fi
 
-swamp_fw=${swamp}/frameworks
 ivy_fw=${swamp_fw}/java/ivy/jars
 
 

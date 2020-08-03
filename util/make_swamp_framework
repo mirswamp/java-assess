@@ -1,0 +1,116 @@
+#!/bin/bash
+
+
+framework=java-assess
+outDir=
+version=
+assessTar=
+tmpBuilDir=
+
+
+function ErrorExit()
+{
+    local code=$1 message=$2
+    local program=$(basename $0)
+
+    echo "ERROR: $program $message"
+    exit "$code"
+}
+
+
+function Run()
+{
+    echo "=====   $*"
+    "$@"
+    r=$?
+    echo
+    if [ $r -ne 0 ]; then
+	echo "ERROR: command failed with exit code $r:  $*"
+	echo
+    fi
+    return $r
+}
+
+
+function RunExitOnFail()
+{
+    Run "$@"
+    r=$?
+    if [ $r -ne 0 ]; then
+	exit $r
+    fi
+}
+
+
+function ValidateAndInit()
+{
+    if [ $# -ne 2 ]; then
+	ErrorExit 1 "Usage: $0 <output-dir> <version>"
+    fi
+
+    assessDir=$(dirname ${BASH_SOURCE[0]})/..
+
+    outDir=$1
+    version=$2
+
+    if [ "${assessDir:0:1}" != '/' ]; then
+	assessDir=$(pwd)/$assessDir
+    fi
+
+    if [ "${outDir:0:1}" != '/' ]; then
+	outDir=$(pwd)/$outDir
+    fi
+
+    if [ -z "$SWAMP_FRAMEWORK_DEPENDENCIES" ]; then
+	SWAMP_FRAMEWORK_DEPENDENCIES=/p/swamp/frameworks
+	export SWAMP_FRAMEWORK_DEPENDENCIES
+	if [ ! -d "$SWAMP_FRAMEWORK_DEPENDENCIES" ]; then
+	    ErrorExit 1 "required environment variable SWAMP_FRAMEWORK_DEPENDENCIES not set"
+	fi
+    fi
+
+    if [ ! -d "$SWAMP_FRAMEWORK_DEPENDENCIES" ]; then
+	ErrorExit 1 "ERROR: SWAMP_FRAMEWORK_DEPENDENCIES directory not found $SWAMP_FRAMEWORK_DEPENDENCIES"
+    fi
+
+    updatePlatform="$SWAMP_FRAMEWORK_DEPENDENCIES/platform/update-platform"
+    tmpBuildDirName="$framework-$version"
+    tmpBuildDir="$outDir/$tmpBuildDirName"
+    assessTar="$tmpBuildDir.tar"
+
+    for f in "$updatePlatform"; do
+	if [ ! -f $f ]; then
+	    ErrorExit 1 "missing expected file:  $f"
+	fi
+    done
+
+    if [ ! -d "$outDir" ]; then
+	ErrorExit 1 "missing output-dir:  $outDir"
+    fi
+
+    for f in "$tmpBuildDir" "$assessTar"; do
+	if [ -e "$f" ]; then
+	    ErrorExit 1 "file must not exist:  $f"
+	fi
+    done
+}
+
+
+function main()
+{
+    ValidateAndInit "$@"
+
+    RunExitOnFail cd "$assessDir"
+    RunExitOnFail util/create_release_bundle.sh "$outDir" "$version"
+    RunExitOnFail rm -rf  "$tmpBuildDir"
+
+    if [ ! -f "$assessTar" ]; then
+	ErrorExit 1 "build successful but archive missing:  $assessTar"
+    fi
+
+    echo
+    echo "Success.  Created $assessTar"
+}
+
+
+main "$@"
